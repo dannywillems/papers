@@ -252,6 +252,12 @@ def _build_paper(paper: Path) -> tuple[str, str, str]:
     text = src_html.read_text(encoding="utf-8")
     title = _title_of(text, slug)
 
+    # make4ht writes intra-document links (citations, cross-references) as
+    # main.html#anchor, but the page is served as index.html, so those
+    # links would 404. Rewrite them to point at the served file. This does
+    # not touch main.css.
+    text = text.replace("main.html", "index.html")
+
     # Head: theme CSS, highlight.js styles, early no-flash theme script.
     head = _THEME_CSS + _HLJS_LINKS + _EARLY_THEME_SCRIPT
     text = text.replace("</head>", head + "</head>", 1)
