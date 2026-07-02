@@ -329,3 +329,28 @@ TSWLatexianTemp*
 # option is specified. Footnotes are the stored in a file with suffix Notes.bib.
 # Uncomment the next line to have this generated file ignored.
 #*Notes.bib
+
+## ---------------------------------------------------------------------
+## Repository-specific additions (papers + code)
+## ---------------------------------------------------------------------
+
+## Compiled paper output (each paper builds <dir>/main.pdf). Figures kept
+## in a paper's own subdirectory (e.g. figures/) are not matched.
+/*/main.pdf
+
+## Python (uv projects under */code)
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+dist/
+build/
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+.coverage
+htmlcov/
+
+## Lean (Lake build outputs, per-checkout)
+.lake/

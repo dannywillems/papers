@@ -1,0 +1,35 @@
+# List of paper directories, built one after another. Keep this list in
+# sync with the build steps in .github/workflows/build.yaml.
+PAPERS := \
+	2026-07-02-authenticated-data-structures
+
+.PHONY: help
+help: ## Ask for help!
+	@grep -E '^[a-zA-Z0-9_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | \
+		awk 'BEGIN {FS = ":.*?## "}; \
+		{printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
+
+.PHONY: build
+build: ## Build every paper, one after another
+	@for p in $(PAPERS); do \
+		echo "==> building $$p"; \
+		$(MAKE) -C "$$p" build || exit 1; \
+	done
+
+.PHONY: clean
+clean: ## Clean auxiliary files in every paper
+	@for p in $(PAPERS); do \
+		echo "==> cleaning $$p"; \
+		$(MAKE) -C "$$p" clean || exit 1; \
+	done
+
+.PHONY: lint-shell
+lint-shell: ## Lint shell scripts using shellcheck
+	@files=$$(find . -type f -name '*.sh' \
+		-not -path '*/.lake/*' -not -path '*/.venv/*' \
+		-not -path '*/node_modules/*'); \
+	if [ -z "$$files" ]; then \
+		echo "No shell scripts to lint"; \
+	else \
+		echo "$$files" | xargs shellcheck; \
+	fi
