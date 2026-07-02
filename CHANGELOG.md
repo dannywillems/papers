@@ -23,6 +23,18 @@ they concern.
   papers. Deployed to GitHub Pages at
   <https://dannywillems.github.io/papers>.
 
+### Fixed
+
+- Site rendering: teach MathJax the papers' custom `\newcommand` macros
+  (they were showing as red literal text), run biber on make4ht's own
+  control file so the HTML bibliography is populated, rewrite make4ht's
+  `main.html#` links to the served `index.html` so citations and
+  cross-references are clickable, give cleveref a name for the custom
+  `construction` environment (fixed a `??` reference), and replace
+  `\textsc` in the algorithm with a MathJax-supported command.
+- Add a light/dark theme with a persisted toggle so text is legible
+  regardless of the browser's colour preference.
+
 ### Infrastructure
 
 - CI: sequential paper build, GitHub Pages deploy, Python checks (ruff,
