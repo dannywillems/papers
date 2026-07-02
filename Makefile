@@ -16,12 +16,24 @@ build: ## Build every paper, one after another
 		$(MAKE) -C "$$p" build || exit 1; \
 	done
 
+.PHONY: html
+html: ## Build every paper as HTML, one after another
+	@for p in $(PAPERS); do \
+		echo "==> html $$p"; \
+		$(MAKE) -C "$$p" html || exit 1; \
+	done
+
+.PHONY: site
+site: html ## Build the GitHub Pages site (HTML + embedded code)
+	python3 tools/build_site.py $(PAPERS)
+
 .PHONY: clean
 clean: ## Clean auxiliary files in every paper
 	@for p in $(PAPERS); do \
 		echo "==> cleaning $$p"; \
-		$(MAKE) -C "$$p" clean || exit 1; \
+		$(MAKE) -C "$$p" clean-all || exit 1; \
 	done
+	rm -rf site
 
 .PHONY: lint-shell
 lint-shell: ## Lint shell scripts using shellcheck

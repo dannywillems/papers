@@ -354,3 +354,10 @@ htmlcov/
 
 ## Lean (Lake build outputs, per-checkout)
 .lake/
+
+## Generated HTML site (built by tools/build_site.py) and per-paper
+## make4ht HTML output.
+/site/
+/*/main.html
+/*/main.css
+/*/main.tmp
