@@ -17,7 +17,15 @@ they concern.
   (`lean/`) proving completeness, soundness, and the proof-size bound
   with no `sorry`.
 
+- HTML site (`make site`, `tools/build_site.py`): every paper converted
+  from LaTeX to HTML with `make4ht` (MathJax for mathematics), its source
+  code embedded in collapsible blocks, and a landing page listing all
+  papers. Deployed to GitHub Pages at
+  <https://dannywillems.github.io/papers>.
+
 ### Infrastructure
 
-- CI: sequential paper build, Python checks (ruff, mypy, pytest), Lean
-  build and demo run, changelog hygiene, PR hygiene, and shellcheck.
+- CI: sequential paper build, GitHub Pages deploy, Python checks (ruff,
+  mypy, pytest), Lean build and demo run, changelog hygiene, PR hygiene,
+  and shellcheck. LaTeX runs in a TeX Live container via `docker run`.
+- Dependabot for GitHub Actions and the Python code.
