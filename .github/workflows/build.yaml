@@ -13,21 +13,23 @@ on:
 permissions:
   contents: read
 
+# Papers are built in a TeX Live container via `docker run` (not a job
+# `container:`, because the texlive image ships no Node.js and would break
+# JavaScript actions such as actions/checkout). The image is pulled once
+# and reused across steps. Add one step per new paper, keeping this list
+# in sync with PAPERS in the root Makefile.
 jobs:
   build-papers:
     name: Build all papers (one after another)
     runs-on: ubuntu-latest
-    container:
-      image: texlive/texlive:latest
+    env:
+      TEXLIVE: texlive/texlive:latest
     steps:
       - uses: actions/checkout@v4
 
-      - name: Ensure make is available
-        run: |
-          command -v make >/dev/null 2>&1 || \
-            (apt-get update && apt-get install -y --no-install-recommends make)
-
-      # Papers are built sequentially. Add one step per new paper here,
-      # keeping this list in sync with PAPERS in the root Makefile.
       - name: Build 2026-07-02-authenticated-data-structures
-        run: make -C 2026-07-02-authenticated-data-structures build
+        run: |
+          docker run --rm -v "$PWD":/work -w /work "$TEXLIVE" sh -c '
+            command -v make >/dev/null 2>&1 || \
+              (apt-get update && apt-get install -y --no-install-recommends make)
+            make -C 2026-07-02-authenticated-data-structures build'

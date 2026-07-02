@@ -1,0 +1,54 @@
+name: Deploy site to GitHub Pages
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Allow one concurrent deployment; do not cancel an in-progress one.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Build the HTML site
+    runs-on: ubuntu-latest
+    env:
+      TEXLIVE: texlive/texlive:latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # LaTeX -> HTML (make4ht) and site assembly run inside the TeX Live
+      # container via docker run, so the JavaScript actions below still run
+      # on the runner (where Node.js is available).
+      - name: Build site
+        run: |
+          docker run --rm -v "$PWD":/work -w /work "$TEXLIVE" sh -c '
+            { command -v make && command -v python3; } >/dev/null 2>&1 || \
+              (apt-get update && \
+               apt-get install -y --no-install-recommends make python3)
+            make site'
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+
+  deploy:
+    name: Deploy to GitHub Pages
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy
+        id: deployment
+        uses: actions/deploy-pages@v4
