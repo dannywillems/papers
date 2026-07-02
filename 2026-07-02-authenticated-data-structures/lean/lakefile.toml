@@ -1,0 +1,11 @@
+name = "ads"
+defaultTargets = ["Ads", "adsdemo"]
+
+# Core Lean only: no Mathlib dependency, so CI builds in seconds.
+
+[[lean_lib]]
+name = "Ads"
+
+[[lean_exe]]
+name = "adsdemo"
+root = "Main"

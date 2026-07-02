@@ -1,0 +1,288 @@
+\documentclass[11pt]{article}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[a4paper,margin=1in]{geometry}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{amsthm}
+\usepackage{mathtools}
+\usepackage{algorithm}
+\usepackage{algpseudocode}
+\usepackage{listings}
+\usepackage{xcolor}
+\usepackage[backend=biber,style=alphabetic]{biblatex}
+\usepackage[hidelinks]{hyperref}
+\usepackage[capitalize]{cleveref}
+
+\addbibresource{references.bib}
+
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{proposition}[theorem]{Proposition}
+\newtheorem{corollary}[theorem]{Corollary}
+\theoremstyle{definition}
+\newtheorem{definition}[theorem]{Definition}
+\newtheorem{construction}[theorem]{Construction}
+\theoremstyle{remark}
+\newtheorem{remark}[theorem]{Remark}
+
+\newcommand{\hash}{\mathsf{H}}
+\newcommand{\digest}{\mathsf{d}}
+\newcommand{\bits}{\{0,1\}}
+\newcommand{\secpar}{\lambda}
+\newcommand{\adv}{\mathcal{A}}
+\newcommand{\negl}{\mathsf{negl}}
+
+\lstset{
+  basicstyle=\ttfamily\small,
+  breaklines=true,
+  frame=single,
+  columns=fullflexible,
+}
+
+\title{Authenticated Data Structures: A Merkle-Tree Log with
+  Logarithmic Membership Proofs}
+\author{Danny Willems}
+\date{\today}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+An authenticated data structure (ADS) lets an untrusted server answer
+queries over a dataset while returning a short proof that a client can
+check against a small digest of the data. This note formalises an ADS
+for an append-only log built from a binary Merkle tree over a
+collision-resistant hash function. We state the completeness and
+soundness properties, give the tree construction and the membership
+proof algorithm, and show that a membership proof for a log of $n$
+entries has size $\lceil \log_2 n \rceil$ hashes and is verified with
+the same number of hash evaluations. A reference implementation in
+Python accompanies the construction.
+\end{abstract}
+
+\section{Introduction}
+\label{sec:intro}
+
+A client with limited storage delegates a dataset to a server and later
+queries it. The client keeps a short \emph{digest} of the data; the
+server answers each query with a result and a \emph{proof}. An
+authenticated data structure (ADS) is the pair of algorithms that
+produces such proofs and checks them against the digest, so that a
+server that returns a wrong answer is detected. The model was studied
+under the names memory checking~\cite{BEGKN94} and authenticated data
+structures~\cite{Tamassia03}; Merkle trees~\cite{Merkle88} are the
+standard building block.
+
+This note covers one concrete ADS: an append-only log whose digest is
+the root of a binary Merkle tree over the log entries. The construction
+supports two queries, appending an entry and proving that a given entry
+sits at a given position. We state the properties the ADS is intended to
+satisfy, give the algorithms, and record the proof sizes. The accompanying
+code implements the tree, the prover, and the verifier.
+
+\paragraph{Contribution.}
+We (i) state completeness and soundness for the append-only log ADS
+(\cref{sec:model}), (ii) give the Merkle-tree construction and the
+membership proof and verification algorithms (\cref{sec:construction}),
+and (iii) bound the proof size and the verification cost
+(\cref{sec:analysis}). The construction is not new; the aim is a
+self-contained statement paired with a tested reference implementation.
+
+\paragraph{Scope.}
+We treat only membership (inclusion) proofs for a static or append-only
+log. Non-membership proofs, range queries, and dynamic dictionaries with
+updates are out of scope and are noted as future work
+(\cref{sec:conclusion}).
+
+\section{Preliminaries}
+\label{sec:prelim}
+
+We write $\secpar$ for the security parameter and $\bits^{*}$ for the set
+of finite binary strings. A function $\negl(\secpar)$ is negligible if it
+is smaller than every inverse polynomial for large enough $\secpar$.
+
+\begin{definition}[Collision resistance]
+\label{def:cr}
+A hash function $\hash \colon \bits^{*} \to \bits^{\secpar}$ is
+collision resistant if for every probabilistic polynomial-time adversary
+$\adv$ the probability, over the choice of $\hash$ from the family, that
+$\adv$ outputs $x \neq x'$ with $\hash(x) = \hash(x')$ is
+$\negl(\secpar)$.
+\end{definition}
+
+We model the hash function as a fixed collision-resistant function and
+suppress the family index for readability. Concatenation is written
+$x \mathbin{\|} y$, and we assume a prefix-free encoding of the arguments
+so that the concatenation is unambiguous.
+
+\section{Model}
+\label{sec:model}
+
+An authenticated append-only log is a tuple of algorithms
+$(\mathsf{Digest}, \mathsf{Prove}, \mathsf{Verify})$ over a sequence of
+entries $L = (e_0, \dots, e_{n-1})$ with $e_i \in \bits^{*}$.
+
+\begin{itemize}
+  \item $\mathsf{Digest}(L) \to \digest$ outputs a digest in
+    $\bits^{\secpar}$.
+  \item $\mathsf{Prove}(L, i) \to \pi$ outputs a membership proof for the
+    entry at position $i$.
+  \item $\mathsf{Verify}(\digest, i, e, \pi) \to \bits$ accepts or rejects
+    the claim that the entry at position $i$ of a log with digest
+    $\digest$ equals $e$.
+\end{itemize}
+
+\begin{definition}[Completeness]
+\label{def:completeness}
+The ADS is complete if for every log $L$ of length $n$ and every index
+$i < n$,
+\[
+  \mathsf{Verify}\bigl(\mathsf{Digest}(L),\, i,\, e_i,\,
+  \mathsf{Prove}(L, i)\bigr) = 1 .
+\]
+\end{definition}
+
+\begin{definition}[Soundness]
+\label{def:soundness}
+The ADS is sound if for every probabilistic polynomial-time adversary
+$\adv$ the probability that $\adv$ outputs $(L, i, e, \pi)$ with
+$e \neq e_i$ and
+$\mathsf{Verify}(\mathsf{Digest}(L), i, e, \pi) = 1$ is
+$\negl(\secpar)$.
+\end{definition}
+
+Soundness says that a proof accepted against the honest digest pins down
+the entry at each position: the server cannot open position $i$ to a
+value other than the one that produced the digest.
+
+\section{Construction}
+\label{sec:construction}
+
+\begin{construction}[Merkle-tree log]
+\label{con:merkle}
+Fix a collision-resistant $\hash$. Let $L = (e_0, \dots, e_{n-1})$.
+Define leaf digests $v_i = \hash(\texttt{0x00} \mathbin{\|} e_i)$ and
+internal digests $v = \hash(\texttt{0x01} \mathbin{\|} v_{\mathrm{left}}
+\mathbin{\|} v_{\mathrm{right}})$. The tree is the balanced binary tree
+over the $n$ leaves; when a level has an odd number of nodes the last
+node is promoted unchanged to the next level. The digest
+$\mathsf{Digest}(L)$ is the root.
+\end{construction}
+
+The domain separation tags \texttt{0x00} and \texttt{0x01} distinguish
+leaf hashing from internal hashing, which blocks the second-preimage
+attack that identifies a leaf with an internal node.
+
+$\mathsf{Prove}(L, i)$ returns the sibling digest at each level on the
+path from leaf $i$ to the root, together with a bit per level recording
+whether the sibling is on the left or the right. $\mathsf{Verify}$
+recomputes the path: it hashes $e$ into a leaf digest, folds in each
+sibling according to its side bit, and accepts iff the recomputed root
+equals $\digest$. \Cref{alg:verify} gives the verifier.
+
+\begin{algorithm}
+\caption{$\mathsf{Verify}(\digest, i, e, \pi)$}
+\label{alg:verify}
+\begin{algorithmic}[1]
+  \State $v \gets \hash(\texttt{0x00} \mathbin{\|} e)$
+  \For{each $(s, \mathit{side})$ in $\pi$ from leaf to root}
+    \If{$\mathit{side} = \textsc{left}$}
+      \State $v \gets \hash(\texttt{0x01} \mathbin{\|} s \mathbin{\|} v)$
+    \Else
+      \State $v \gets \hash(\texttt{0x01} \mathbin{\|} v \mathbin{\|} s)$
+    \EndIf
+  \EndFor
+  \State \Return $v = \digest$
+\end{algorithmic}
+\end{algorithm}
+
+\section{Analysis}
+\label{sec:analysis}
+
+\begin{proposition}[Completeness]
+\label{prop:completeness}
+\Cref{con:merkle} is complete in the sense of
+\cref{def:completeness}.
+\end{proposition}
+
+\begin{proof}
+$\mathsf{Prove}(L, i)$ returns exactly the sibling digests along the
+leaf-to-root path, in order, with correct side bits. The fold in
+\cref{alg:verify} applies the same internal hashing as
+\cref{con:merkle} at each level, in the same order, so the recomputed
+value equals the honest root, which is $\digest$. Hence $\mathsf{Verify}$
+returns $1$.
+\end{proof}
+
+\begin{proposition}[Soundness]
+\label{prop:soundness}
+If $\hash$ is collision resistant (\cref{def:cr}), then
+\cref{con:merkle} is sound in the sense of \cref{def:soundness}.
+\end{proposition}
+
+\begin{proof}[Proof sketch]
+Suppose an adversary produces $(L, i, e, \pi)$ with $e \neq e_i$ that
+verifies against $\digest = \mathsf{Digest}(L)$. The honest path from
+leaf $i$ and the path recomputed by the verifier both start at the root
+$\digest$ and both are folds of $\hash$. Since $e \neq e_i$, the two
+paths differ at the leaf. Walk down from the root to the first level
+where the two paths hold different values whose parent holds the same
+value: at that level two distinct hash inputs map to the same digest,
+which is a collision for $\hash$. Extracting this collision runs in
+polynomial time, so by \cref{def:cr} the adversary's success probability
+is $\negl(\secpar)$.
+\end{proof}
+
+\begin{proposition}[Proof size and verification cost]
+\label{prop:size}
+For a log of $n$ entries a membership proof consists of
+$\lceil \log_2 n \rceil$ sibling digests, and $\mathsf{Verify}$ performs
+$\lceil \log_2 n \rceil + 1$ evaluations of $\hash$.
+\end{proposition}
+
+\begin{proof}
+The balanced tree over $n$ leaves has height $\lceil \log_2 n \rceil$,
+and the path from a leaf to the root visits one sibling per level. The
+verifier hashes the claimed entry into a leaf digest (one evaluation)
+and then performs one internal evaluation per level.
+\end{proof}
+
+\section{Reference implementation}
+\label{sec:impl}
+
+The accompanying Python package \texttt{ads} implements
+\cref{con:merkle}. The module \texttt{ads.merkle} builds the tree,
+produces membership proofs, and verifies them with the domain-separated
+hashing of \cref{con:merkle}; the default hash is SHA-256. The test
+suite checks completeness on random logs and checks that tampering with
+an entry, an index, or a proof causes verification to reject. Proof
+sizes measured in the tests match \cref{prop:size}.
+
+A companion Lean~4 development (directory \texttt{lean/}) machine-checks
+the three properties over an abstract leaf-hash and node-hash, the two
+distinct functions modelling the domain separation of \cref{con:merkle}.
+The theorems \texttt{Ads.completeness}, \texttt{Ads.soundness}, and
+\texttt{Ads.proof\_length} correspond to \cref{prop:completeness},
+\cref{prop:soundness}, and \cref{prop:size}; \texttt{Ads.soundness}
+states the contrapositive of \cref{def:soundness}, that a wrong opening
+yields a hash collision. The proofs use no \texttt{sorry} and depend only
+on the standard axioms \texttt{propext}, \texttt{Classical.choice}, and
+\texttt{Quot.sound}.
+
+\section{Conclusion}
+\label{sec:conclusion}
+
+We stated an authenticated append-only log ADS from a binary Merkle
+tree, with logarithmic proof size and verification cost, and paired it
+with a tested implementation. Directions not covered here include
+non-membership proofs over a sorted structure, consistency proofs
+between two digests of the same growing log (as in certificate
+transparency), and authenticated dictionaries supporting updates.
+
+\printbibliography
+
+\end{document}
