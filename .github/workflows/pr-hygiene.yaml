@@ -1,0 +1,42 @@
+name: PR hygiene checks
+
+on:
+  pull_request:
+    types: [assigned, opened, synchronize, reopened, labeled, unlabeled]
+    branches:
+      - main
+  merge_group:
+    types: [checks_requested]
+
+permissions:
+  contents: read
+
+jobs:
+  pr-hygiene:
+    name: PR size, titles, fixups, commit bodies
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Download hygiene scripts from toolbox
+        run: |
+          base=https://raw.githubusercontent.com/dannywillems/toolbox/main/pr-hygiene
+          for s in check-pr-size.sh check-title-length.sh \
+                   check-no-fixup.sh check-commit-body.sh; do
+            curl -sSLO "$base/$s"
+            chmod +x "$s"
+          done
+
+      - name: Check PR size (fail > 500 lines, warn at 300)
+        run: ./check-pr-size.sh "${{ github.event.pull_request.base.sha }}"
+
+      - name: Check commit title length (<= 80 chars)
+        run: ./check-title-length.sh "${{ github.event.pull_request.base.sha }}"
+
+      - name: Check for fixup/squash/WIP commits
+        run: ./check-no-fixup.sh "${{ github.event.pull_request.base.sha }}"
+
+      - name: Check commit bodies (required for 20+ line commits)
+        run: ./check-commit-body.sh "${{ github.event.pull_request.base.sha }}"

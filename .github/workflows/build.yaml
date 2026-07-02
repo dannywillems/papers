@@ -1,0 +1,33 @@
+name: Build papers
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+  merge_group:
+    types: [checks_requested]
+
+permissions:
+  contents: read
+
+jobs:
+  build-papers:
+    name: Build all papers (one after another)
+    runs-on: ubuntu-latest
+    container:
+      image: texlive/texlive:latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Ensure make is available
+        run: |
+          command -v make >/dev/null 2>&1 || \
+            (apt-get update && apt-get install -y --no-install-recommends make)
+
+      # Papers are built sequentially. Add one step per new paper here,
+      # keeping this list in sync with PAPERS in the root Makefile.
+      - name: Build 2026-07-02-authenticated-data-structures
+        run: make -C 2026-07-02-authenticated-data-structures build
