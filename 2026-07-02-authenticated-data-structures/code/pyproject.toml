@@ -9,7 +9,7 @@ authors = [{ name = "Danny Willems", email = "danny@badaas.be" }]
 dependencies = []
 
 [project.optional-dependencies]
-dev = ["ruff>=0.15.1", "mypy>=1.19", "pytest>=9.0"]
+dev = ["ruff>=0.15.1", "mypy>=2.1.0", "pytest>=9.0"]
 
 [build-system]
 requires = ["hatchling"]
