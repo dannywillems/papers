@@ -15,6 +15,11 @@
 \usepackage[hidelinks]{hyperref}
 \usepackage[capitalize]{cleveref}
 
+% cleveref does not know the name of the custom "construction" theorem
+% environment; declare it so \cref produces "Construction N", not "??".
+\crefname{construction}{Construction}{Constructions}
+\Crefname{construction}{Construction}{Constructions}
+
 \addbibresource{references.bib}
 
 \theoremstyle{plain}
@@ -190,7 +195,7 @@ equals $\digest$. \Cref{alg:verify} gives the verifier.
 \begin{algorithmic}[1]
   \State $v \gets \hash(\texttt{0x00} \mathbin{\|} e)$
   \For{each $(s, \mathit{side})$ in $\pi$ from leaf to root}
-    \If{$\mathit{side} = \textsc{left}$}
+    \If{$\mathit{side} = \mathsf{left}$}
       \State $v \gets \hash(\texttt{0x01} \mathbin{\|} s \mathbin{\|} v)$
     \Else
       \State $v \gets \hash(\texttt{0x01} \mathbin{\|} v \mathbin{\|} s)$
