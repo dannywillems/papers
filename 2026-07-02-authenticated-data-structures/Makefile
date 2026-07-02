@@ -12,10 +12,12 @@ build: ## Build the paper PDF with latexmk (pdflatex + biber)
 
 .PHONY: html
 html: ## Build the paper as HTML (make4ht + MathJax)
-	# make4ht does not run the bibliography backend itself, so generate
-	# the biblatex .bbl with biber first; make4ht's latex passes then read
-	# it and resolve citations and cross-references.
-	pdflatex -interaction=nonstopmode -halt-on-error $(MAIN).tex
+	# make4ht does not run the bibliography backend itself. Run make4ht
+	# once to emit the biblatex control file, then biber on that exact
+	# file, then make4ht again to typeset the bibliography and resolve
+	# citations. Running biber on make4ht's own .bcf avoids the stale-.bbl
+	# checksum mismatch that leaves the bibliography empty.
+	make4ht -u -f html5 $(MAIN).tex "mathjax"
 	biber $(MAIN)
 	make4ht -u -f html5 $(MAIN).tex "mathjax"
 
