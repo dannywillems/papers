@@ -16,7 +16,7 @@ jobs:
     name: CHANGELOG.md is updated
     runs-on: ubuntu-latest
     steps:
-      - uses: tarides/changelog-check-action@v3
+      - uses: tarides/changelog-check-action@v4
         with:
           changelog: CHANGELOG.md
 
