@@ -168,8 +168,11 @@ Phase 0, context (this file):
       its note to verified (done 2026-07-19; note now records the
       full definitions, the B/B-/B+ caches, and the adversarial
       branch-spine analysis).
-- [ ] Read `eprint/2026-1235.pdf` (HMT) whole and write its full
-      note; decide its place in related work.
+- [x] Read `eprint/2026-1235.pdf` (HMT) whole and write its full
+      note; decide its place in related work (done 2026-07-19;
+      decision: one related-work paragraph in Section 9 presenting
+      workload-adaptive layouts as an orthogonal optimality axis, see
+      the source entry below).
 
 Phase 1, structure:
 
@@ -245,21 +248,29 @@ to read and WHY; the notes hold the extracted content.
   TODO add to references.bib.
 - Dahlberg, Pulls, Peeters, "Efficient Sparse Merkle Trees" (NordSec
   2016; eprint 2016/683). For: sparse Merkle trees, caching strategies,
-  non-membership proofs. TODO add.
+  non-membership proofs. Status: VERIFIED, read whole from the local
+  PDF 2026-07-19; note upgraded with Definitions 1-2, the B/B-/B+
+  caches, the secure encodings, and the branch-spine worst case
+  (at most N traversals, one per layer; the note records the
+  citation caveats). Notes:
+  `notes/dahlberg-pulls-peeters-2016-sparse-merkle-trees.md`.
+  TODO add to references.bib.
 - Jakobsson, Leighton, Micali, Szydlo, "Fractal Merkle Tree
   Representation and Traversal", CT-RSA 2003. For: first sublinear
   traversal algorithm. TODO add.
 - Szydlo, "Merkle Tree Traversal in Log Space and Time", Eurocrypt
   2004. For: 2 log N time / < 3 log N space traversal and the matching
   lower bound. TODO add.
-- "Merkle Mountain Ranges are Optimal: On Witness Update Frequency for
-  Cryptographic Accumulators", eprint 2025/234. For: the central lower
-  bound and the matching MMR variant. TODO add; verify authors and the
-  exact theorem statement from the PDF. eprint cannot be fetched by
-  agents: the human downloads the PDF into `eprint/` (gitignored, see
-  AGENTS.md), and it is read from there. Same applies to
-  Dahlberg-Pulls-Peeters if the NordSec version is not accessible
-  elsewhere (their eprint is 2016/683).
+- Bonneau, Chen, Christ, Karantaidou, "Merkle Mountain Ranges are
+  Optimal: On Witness Update Frequency for Cryptographic
+  Accumulators", eprint 2025/234. For: the central lower bound and the
+  matching MMR variant. Read whole and verified (see the log).
+  Published venue (found via 2026/1235's bibliography, reference [7]):
+  CRYPTO 2025, Springer, pp. 170-202, ISBN 978-3-032-01878-6,
+  DOI 10.1007/978-3-032-01878-6_6; cite the proceedings version.
+  TODO add to references.bib. eprint cannot be fetched by agents: the
+  human downloads the PDF into `eprint/` (gitignored, see AGENTS.md),
+  and it is read from there.
 - Peter Todd, "Merkle Mountain Ranges", OpenTimestamps documentation.
   For: the original MMR description. Notes:
   `notes/todd-merkle-mountain-ranges.md`. TODO add to references.bib
@@ -291,9 +302,21 @@ to read and WHY; the notes hold the extracted content.
   `notes/certificate-transparency-production.md`. TODO add.
 - Working synthesis (not citable):
   `notes/synthesis-witness-maintenance.md`.
-- "Huffman-Merkle Tree (HMT)": mentioned in an issue comment without a
-  reference. TODO identify the intended source before deciding
-  whether it enters the paper.
+- Shangguan, Yaish, Malkhi, "Authenticated Data Structures for
+  Dynamic Workloads" (the Huffman-Merkle Tree, HMT), eprint 2026/1235.
+  Resolves the "Huffman-Merkle Tree (HMT)" issue comment. Status:
+  VERIFIED, read whole from the local PDF 2026-07-19; full note at
+  `notes/huffman-merkle-tree-hmt.md`. Decision: one related-work
+  paragraph in Section 9, presenting workload-adaptive layouts
+  (access-weighted expected proof/update cost under skewed, drifting
+  workloads; tiered hot HuffMHT + cold Merkle tree) as an optimality
+  axis ORTHOGONAL to the witness-update frequency of 2025/234; cite
+  2026/1235 with HuffMHT (TrustBus 2005) as the static precursor. Not
+  a full section: it is a dynamic dictionary ADS, not the append-only
+  problem set driving this paper. TODO add both to references.bib
+  when Section 9 is written (note the citation caveats recorded in
+  the note: eprint only, empirical claims, ambiguous headline
+  multipliers).
 
 ### Found during research
 
@@ -335,7 +358,12 @@ Secondary sources surfaced by the digests (metadata from eprint
   differs from the Eurocrypt 2004 version; cite the published
   constants (2 log N time, < 3 log N space).
 - HMT lineage: Munoz, Forne, Esparza, Rey, "HuffMHT", TrustBus 2005
-  (Huffman-shaped Merkle tree precursor).
+  (Huffman-shaped Merkle tree precursor). Full metadata verified in
+  2026/1235's bibliography: LNCS 3592, pp. 119-127,
+  DOI 10.1007/11537878_13.
+- Mendonca, Shi, Huynh, Pryvalov, Herzberg, "Efficient Merkle-Tree
+  Consistent Accumulator", eprint 2026/673 (surfaced by 2026/1235's
+  bibliography; not read; possibly relevant to Sections 4-6).
 
 ## Log
 
@@ -349,3 +377,13 @@ Secondary sources surfaced by the digests (metadata from eprint
   upper bound, optimal at k = polylog n). HMT identified as eprint
   2026/1235. Remaining reads: 2016/683 and 2026/1235 local PDFs
   (fresh session, per the no-compaction rule).
+- 2026-07-19 (later still): The two remaining reads done, whole and
+  first-hand, in one fresh session. 2016/683 (16 pages): note
+  verified and extended with Definitions 1-2, the recurrences, the
+  B/B-/B+ caches, the secure encodings, and the branch-spine
+  worst case (two prior paraphrases corrected: Definition 1's shape,
+  and the traversal bound, which is at most N per audit path, not
+  constant). 2026/1235 (34 pages): full note written, replacing the
+  placeholder; placement decided (related-work paragraph in
+  Section 9). Side-find: the published venue of 2025/234 is CRYPTO
+  2025 (DOI 10.1007/978-3-032-01878-6_6). Phase 0 is complete.
