@@ -3,6 +3,7 @@
     "target": "ES2018",
     "lib": ["ES2018", "DOM", "DOM.Iterable"],
     "outDir": "dist",
+    "rootDir": "src",
     "newLine": "lf",
     "strict": true,
     "noImplicitAny": true,
