@@ -364,3 +364,7 @@ htmlcov/
 
 ## Node (site assets TypeScript project)
 node_modules/
+
+## eprint papers downloaded manually by the human for reading; never
+## committed (respect eprint distribution rules).
+/*/eprint/

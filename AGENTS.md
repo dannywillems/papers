@@ -37,6 +37,44 @@ in favour of it. The same reasoning applies to future needs: search
 for the standard tool first, and only write custom code when no
 suitable tool exists (say so in the commit message).
 
+## Reading notes (mandatory)
+
+Whenever you read a paper, specification, or substantial technical
+source while working on a paper, dump the knowledge you extracted into
+a dedicated markdown file named after that source, one file per
+source, under the paper directory's `notes/` subdirectory (e.g.
+`notes/szydlo-2004-merkle-tree-traversal.md`). Include:
+
+- full bibliographic data (authors, title, venue, year, URL/DOI, the
+  version actually read, access date);
+- the core results with precise statements (theorems, bounds,
+  algorithms), not paraphrases;
+- your understanding: how the pieces fit, assumptions, limitations;
+- everything judged useful for the paper: which sections it feeds,
+  what to cite it for, quotable definitions, open questions;
+- a status line: whether claims were verified against the source
+  itself or only summarised second-hand.
+
+Update the note when the source is re-read or when a claim is
+verified. The paper's `PLAN.md` references these notes; keep the two
+consistent.
+
+eprint papers: papers on eprint.iacr.org cannot be accessed by AI
+agents. When an eprint paper must be read, ask the human to download
+it manually and to place it in the paper directory's `eprint/`
+subdirectory (e.g. `2026-07-02-authenticated-data-structures/eprint/`),
+then read it from there. NEVER commit the `eprint/` directory (it is
+gitignored); we respect the eprint distribution rules. Reading notes
+about an eprint paper (your own words, under `notes/`) are fine to
+commit; the PDF itself is not.
+
+Context integrity while reading: NEVER let the agent context be
+compacted while reading a paper. The whole paper must fit in the
+context window; if it does not fit, STOP and warn the human instead of
+reading it partially or from a summary. Compaction while a source is
+in flight is how hallucinated citations happen. More generally, ask
+the human before compacting the context at all.
+
 ## Repository layout
 
 - One directory per paper, named `YYYY-MM-DD-<slug>`, containing
