@@ -31,6 +31,42 @@ paper grew out of asking, while reading zcash/incrementalmerkletree,
 which structures in the literature solve exactly the problems that
 repository addresses.
 
+## Canonical property set (agreed 2026-07-19)
+
+The properties the formal ADS definitions, the Python library, and
+the Lean library are built against. Source: issue comment
+<https://github.com/dannywillems/dannywillems.github.io/issues/535#issuecomment-5016934670>
+(the six core properties), plus three explicit companions agreed in
+session. This is the interface the incremental-Merkle-tree problem
+class requires:
+
+1. append (append-only insertion of new elements);
+2. sparse witnesses (maintain witnesses only for a marked subset of
+   elements, not all of them);
+3. pruning (discard interior data not needed for the marked witnesses
+   and retained checkpoints);
+4. out-of-order insertion (leaves and subtree roots inserted in
+   arbitrary order around a tracked frontier);
+5. bounded checkpoints (at most a fixed number of retained states);
+6. proof update when new elements are added (incremental /
+   fast-forwardable witnesses).
+
+Explicit companions:
+
+7. rewind (restore the structure to any retained checkpoint; the
+   operation over property 5);
+8. verification against recent anchors (proofs verify against any
+   checkpointed root in a bounded history, not only the latest
+   digest);
+9. metrics attached to property 6, so optimality can be stated:
+   total witness-update count (eprint 2025/234, Definition 8) and the
+   cost of a single witness fast-forward.
+
+Deliberately out of this set: consistency proofs between digests
+(RFC 6962); the Zcash workload gets digest consistency from
+consensus. The paper covers them in the append-only-logs section as
+an extension, not as a required property.
+
 ## Current state (2026-07-19)
 
 The paper is a compact note covering the base construction only:
@@ -128,8 +164,10 @@ Phase 0, context (this file):
 - [x] Resolve "Huffman-Merkle Tree (HMT)": identified as eprint
       2026/1235 (Shangguan, Yaish, Malkhi, "Authenticated Data
       Structures for Dynamic Workloads"); local PDF provided.
-- [ ] Read `eprint/2016-683.pdf` (Dahlberg et al.) whole and upgrade
-      its note to verified.
+- [x] Read `eprint/2016-683.pdf` (Dahlberg et al.) whole and upgrade
+      its note to verified (done 2026-07-19; note now records the
+      full definitions, the B/B-/B+ caches, and the adversarial
+      branch-spine analysis).
 - [ ] Read `eprint/2026-1235.pdf` (HMT) whole and write its full
       note; decide its place in related work.
 
@@ -143,6 +181,9 @@ Phase 1, structure:
 
 Phase 2, theory sections:
 
+- [ ] Write Section 2 (models and formal definitions) against the
+      canonical property set above; the definitions double as the
+      interfaces of the Python and Lean libraries.
 - [ ] Write Section 3 (sparse Merkle trees, accumulators).
 - [ ] Write Section 4 (history trees, RFC 6962 proofs, with the
       consistency-proof algorithm).
