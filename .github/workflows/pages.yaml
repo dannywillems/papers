@@ -23,7 +23,7 @@ jobs:
     env:
       TEXLIVE: texlive/texlive:latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       # The site's runner scripts are TypeScript, compiled on the runner
       # (where Node.js is available) before the LaTeX container step.
