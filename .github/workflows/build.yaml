@@ -25,7 +25,7 @@ jobs:
     env:
       TEXLIVE: texlive/texlive:latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Build 2026-07-02-authenticated-data-structures
         run: |
