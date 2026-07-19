@@ -22,24 +22,28 @@
   - FORMAL WRITE-UP: IACR eprint 2025/2031, "A Note on Notes: Towards
     Scalable Anonymous Payments via Evolving Nullifiers and Oblivious
     Synchronization", Sean Bowe and Ian Miers, Nov 2025. This is the
-    academic paper behind Tachyon's core. eprint CANNOT be fetched by
-    agents; number/title/authors reported from DBLP, tachyon.z.cash,
-    and ZK news, NOT read. It must be supplied manually into
-    `eprint/` per the eprint rule, then read whole; the concrete
-    accumulator/nullifier construction that the blog posts only
-    "sketch" is expected to live here.
+    academic paper behind Tachyon's core. READ WHOLE first-hand on
+    2026-07-19 from the manually-supplied local PDF; dedicated
+    verified note at `notes/bowe-miers-2025-a-note-on-notes.md`. It
+    resolves and in two places CORRECTS the blog-based understanding
+    (see design items 5-6 and the corrections in that note): the
+    note-commitment accumulator is NOT replaced (abstract, Merkle,
+    unchanged); the nullifier mechanism is EVOLVING NULLIFIERS plus an
+    oblivious-syncing incremental unspent proof, not primarily a new
+    accumulator.
 - Secondary (corroborating, NOT primary-verified): ZK Podcast ep. 388
   with Bowe (2026-01-21); CoinDesk / Messari coverage; TOKEN2049 2025
   talk.
 - Accessed: 2026-07-19.
 - Status: VERIFIED against the primary blog posts, the tachyon.z.cash
-  site, and the Ragu repo via a deep-research pass (3-vote
-  adversarial verification, 10 core claims, 0 refuted) plus three
-  targeted follow-up agents on the open items. Verbatim quotes below
+  site, the Ragu repo (via a deep-research pass, 10 core claims, 0
+  refuted, plus three targeted follow-up agents) AND the formal paper
+  eprint 2025/2031, read whole first-hand (dedicated note
+  `notes/bowe-miers-2025-a-note-on-notes.md`). Verbatim quotes below
   are from the cited primary sources. Tachyon is a DESIGN PROPOSAL in
   active R&D (announced 2025), not deployed; every "does X" means "is
-  designed to do X". The one construction still unread first-hand is
-  eprint 2025/2031 (see above).
+  designed to do X". With the paper read, the accumulator/nullifier
+  construction is no longer an open gap; see design items 5-6.
 
 ## Why this is directly relevant to the paper
 
@@ -94,52 +98,57 @@ changes the wallet's representation of its own state.
    boundaries, the accumulator is checkpointed and a succinct (hash)
    representation of that checkpoint is stored by validators. We call
    this checkpoint an 'anchor.'"
-5. The note-commitment accumulator: role unchanged, concrete
-   structure NOT specified, possibly replaced. This is the most
-   paper-relevant open point. The primary posts NEVER name the
-   note-commitment structure: no "depth-32 incremental Merkle tree",
-   no "Merkle Mountain Range", no "Verkle/RSA/vector commitment". The
-   only statement about changing it is that Tachyon introduces a NEW
-   accumulator for nullifiers and MAY move note commitments into it
-   too: "Nullifiers (and potentially also note commitments) must be
-   batch inserted into a new accumulator that supports efficient set
-   (non-)membership testing in PCD. I've already sketched a very
-   simple and efficient accumulation scheme for this." So per primary
-   sources: the note-commitment accumulator keeps its role
-   (append + checkpoint-to-anchor + set-inclusion witness), but
-   whether the fixed depth-32 Orchard tree is retained, changed, or
-   replaced by the new PCD-friendly accumulator is UNSPECIFIED in the
-   blog posts; the new scheme is only "sketched", not given. A
-   secondary explainer calls the new nullifier accumulator a
-   "vector-commitment accumulator" with "constant-size state"; that
-   phrasing is NOT in Bowe's posts and must be treated as secondary.
-   The concrete construction is the thing eprint 2025/2031 is
-   expected to pin down.
-6. Nullifiers: reversed derivation, a new non-membership accumulator,
-   and where the double-spend check goes. Today's baseline, stated by
-   Bowe: "the nullifier ... serves as an indelible mark on the chain
-   state that prohibits double-spends. Validators currently remember
-   all of the nullifiers seen before and reject payments as invalid
-   if they reveal a previously-seen nullifier." That ever-growing
-   nullifier set is a target. Tachyon (a) reverses derivation
-   (nullifiers "are not determined by the note commitment but rather
-   the other way around", so the oblivious syncing service is
-   deprived "of any information about the note being spent"); (b)
-   batch-inserts nullifiers into the new accumulator "that supports
-   efficient set (non-)membership testing in PCD"; and (c) discharges
-   the FULL-HISTORY freshness check inside the wallet's PCD, so
-   validators shrink to a recent window: "validators are now only
-   responsible for ensuring that the transaction is correct in the
-   presence of the additional transactions that appeared in the
-   intervening time, which just involves checking that the most
-   recent block(s) do not contain the revealed nullifier." This
-   recent-window reduction is EXACTLY what makes global pruning
-   sound: the historical non-membership is proven, not re-checked
-   against retained state. Caveat: no single sentence says verbatim
-   "the transaction carries a nullifier non-membership proof"; the
-   design intent is strongly implied by (a)-(c) read together, not
-   word-for-word asserted. How many "recent block(s)" the unpruned
-   nullifier window spans is not specified.
+5. The note-commitment accumulator: UNCHANGED (this is the paper's
+   authoritative answer; corrects the blog-based reading). Per eprint
+   2025/2031 Section 1: "Canonically in Zerocash, the accumulator is
+   a Merkle tree, though we will refer to it abstractly as other
+   approaches are possible." The accumulator state (Merkle root) is
+   the public ANCHOR; the membership witness (Merkle path) is
+   private. The paper does NOT replace or migrate the note-commitment
+   structure; its entire contribution is on the nullifier
+   (non-membership) side. The blog's "(and potentially also note
+   commitments) ... into a new accumulator" was a floated
+   possibility, NOT what the formal design does. So: the append-only
+   note-commitment membership accumulator stays (still needs
+   membership-witness maintenance, which the paper notes is "batchable
+   ... saving a constant factor" but is still the omega(n)-bounded
+   problem of eprint 2025/234, addressed by shardtree, NOT by this
+   paper). Treat the secondary "vector-commitment accumulator with
+   constant-size state" claim as unsupported.
+6. Nullifiers: EVOLVING NULLIFIERS plus an oblivious-syncing
+   incremental unspent proof (the paper's actual, formal mechanism;
+   supersedes the blog's "reversed derivation into a new accumulator"
+   phrasing). Baseline problem: the nullifier set grows linearly
+   forever and "must be stored, queried and updated by all validating
+   nodes" (~0.5 GB/day at 100 tps). Mechanism (eprint 2025/2031
+   Section 1.3):
+   - Evolving nullifier: change `eta <- PRF(k_note, rho)` to
+     `eta <- PRF(k_note, rho || e)` where `e` is a monotonic EPOCH
+     identifier (per block WLOG), revealed publicly; validators
+     enforce the epoch is current. (This is the precise form of the
+     blog's "reversed derivation": the nullifier is now a function of
+     an epoch counter, so it changes over time and old versions are
+     unlinkable to the current one.)
+   - Within an epoch: the nullifier is fixed, so the ordinary dedup
+     check catches same-epoch double-spends; validators keep only the
+     CURRENT epoch's spent-nullifier database.
+   - Across epochs: the client must show every PREVIOUS epoch version
+     was also unspent, WITHOUT revealing them (which would restore
+     the storage problem). This is an INCREMENTAL UNSPENT PROOF: a
+     recursive-proof-composed non-membership proof, extended one
+     epoch at a time, that "requires no sensitive information from the
+     client" and so can be built by a "completely untrusted party",
+     the oblivious syncing service. Because old nullifier versions are
+     unlinkable, outsourcing leaks nothing.
+   - Linkage hazard and fix: correlated proof-update timing across a
+     wallet's notes "would be fatal to the entire approach"; the proof
+     is RE-RANDOMIZED (as accumulation-scheme PCD permits, ref Bunz et
+     al 2020/499) so the service cannot tell which transactions it
+     helped with.
+   Net effect on validators: they keep only the current epoch's
+   nullifiers and verify the incremental unspent proof for the past;
+   old-epoch nullifier state is permanently prunable. That is what
+   makes nullifier pruning sound.
 7. Global pruning. "Almost everything in a block can be permanently
    pruned by validators and ultimately all users of the system as
    well"; Tachyon "allows validators to begin pruning all old
@@ -220,6 +229,18 @@ changes the wallet's representation of its own state.
 The paper's ten properties, and where Tachyon puts each. "Kept",
 "sidestepped", or "moved to another party".
 
+Framing correction after reading eprint 2025/2031: Tachyon touches
+TWO distinct authenticated structures, and our property set is about
+the first. (i) The note-commitment tree: an append-only MEMBERSHIP
+accumulator, our paper's core; Tachyon leaves it UNCHANGED (abstract,
+Merkle), and its membership-witness maintenance is the omega(n)
+problem of eprint 2025/234 that shardtree engineers within, NOT what
+Tachyon solves. (ii) The nullifier set: a NON-membership / revocation
+structure (the dual problem), where Tachyon's evolving-nullifier +
+oblivious-synchronization design lives. The per-property mapping below
+is about structure (i) unless noted; structure (ii) is the additional
+axis in items 3, 7, and 10.
+
 1. append: KEPT. Validators still "continually append the new note
    commitments ... to a cryptographic accumulator" and checkpoint it
    to anchors at block boundaries. Append is unchanged at consensus.
@@ -251,17 +272,24 @@ The paper's ten properties, and where Tachyon puts each. "Kept",
    checkpoint-bound idea in a different guise; but Tachyon's posts do
    not frame it as a fixed checkpoint count, and the window size is
    unspecified. Call it "implied, not quantified".
-6. proof update when new elements are added: MOVED and TRANSFORMED.
-   The core move, and the single most paper-relevant point. The
-   per-append witness update is NOT eliminated globally (the eprint
-   2025/234 lower bound still binds any succinct append-only
-   accumulator); it is (a) moved off the wallet onto the oblivious
-   syncing service, which can advance the proof while the wallet is
-   offline and learns only a (blinded) nullifier, and (b)
-   re-expressed as advancing a recursive PCD proof of wallet-state
-   correctness rather than editing a Merkle authentication path. The
-   work does not vanish; the WALLET stops doing it, and its
-   representation changes from data (a path) to a proof.
+6. proof update when new elements are added: SPLIT by membership vs
+   non-membership. For the note-commitment MEMBERSHIP witness
+   (structure i): the paper says updates are "batchable, saving a
+   constant factor" and the broader Tachyon vision moves them to the
+   oblivious syncing service / wallet-state PCD; the omega(n) total
+   (eprint 2025/234) still binds and is not what this paper attacks.
+   For the nullifier NON-membership proof (structure ii): the hard
+   case, since "clients cannot compute the initial non-membership
+   proof without access to the full nullifier history" and known
+   lower bounds ([10] Christ-Bonneau 2022/1478) make it hard to
+   eliminate. Tachyon's escape is the evolving-nullifier + incremental
+   unspent proof: the update is (a) moved onto the untrusted oblivious
+   syncing service (which advances the proof from purely public info
+   while the wallet is offline), and (b) re-expressed as a
+   recursively-composed, re-randomized non-membership proof rather
+   than a maintained accumulator witness. The work does not vanish;
+   the wallet stops doing it and the representation changes from a
+   maintained witness to a proof.
 7. bounded memory footprint: ACHIEVED for the wallet in a strong
    form, and additionally for CONSENSUS. The wallet keeps a
    constant-size PCD proof of its state instead of witnesses whose
@@ -295,7 +323,13 @@ The paper's ten properties, and where Tachyon puts each. "Kept",
     the nullifier set, by moving from "remember every nullifier" to a
     PCD-checked non-membership accumulator; that is the same
     "prove-instead-of-retain" move applied to a non-membership
-    structure rather than a membership one.
+    structure rather than a membership one. Sharpened by eprint
+    2025/2031: MEMBERSHIP updates (note commitments) are the
+    easier, batchable case bounded by 2025/234; NON-membership
+    updates (nullifiers) are the harder case bounded by Christ-Bonneau
+    2022/1478, and are exactly where the evolving-nullifier trick is
+    needed. Same witness-update tyranny, two dual structures, two
+    different escapes.
 
 ## Open / unconfirmed (status after the follow-up research pass)
 
@@ -313,31 +347,39 @@ Resolved by the follow-up pass (2026-07-19):
   repo, un-audited; proving system is Halo/Pasta/Poseidon,
   trusted-setup-free). See the status section.
 
+Resolved by reading eprint 2025/2031 (2026-07-19):
+
+- Note-commitment accumulator: UNCHANGED (abstract, canonically a
+  Merkle tree, with an anchor as public input). NOT replaced, note
+  commitments do NOT migrate. The blog's "potentially also note
+  commitments" is not the formal design.
+- Nullifier construction: evolving nullifiers (epoch-keyed PRF) +
+  incremental unspent proof via recursive proof composition,
+  outsourced to an oblivious syncing service and re-randomized. This
+  is the concrete mechanism, not a single named accumulator.
+
 Still genuinely open:
 
-- The CONCRETE note-commitment and nullifier accumulator
-  construction. The blogs deliberately do not name it (no depth-32,
-  no MMR) and only "sketch" the new PCD-friendly (non-)membership
-  accumulator. This is the single most paper-relevant gap and is
-  expected to be pinned down in eprint 2025/2031 (needs manual
-  download). Until read, do NOT assert Tachyon uses/keeps/drops any
-  specific structure.
-- Whether note commitments actually migrate into the new accumulator
-  ("potentially", per Bowe) or the Orchard tree is retained for
-  commitments while only nullifiers move.
-- The size of the unpruned recent nullifier window (how many blocks).
-- Reorg/rewind semantics under PCD wallet state.
-- A firm network-upgrade target and mainnet date (none stated).
+- The unpruned recent nullifier window: the paper says the epoch
+  counter is "per block WLOG (in practice ... less frequently)" but
+  does not fix the epoch length; it explicitly ties the need for a
+  data-availability layer to epoch length (long epochs organic,
+  single-block epochs force centralized nullifier storage).
+- Reorg/rewind semantics under evolving nullifiers / PCD wallet
+  state: not covered.
+- The concrete proof system + accumulator co-design for batched
+  non-membership: flagged as future possibility ([7;16]), not
+  specified.
+- A firm network-upgrade target and mainnet date: none stated;
+  Tachyon is not in the NU7 candidate-ZIP set.
 
-## Action required (eprint rule)
+## Sources now fully read
 
-To finish this note to "verified" on the accumulator/nullifier
-construction, the human should download
-<https://eprint.iacr.org/2025/2031.pdf> ("A Note on Notes", Bowe &
-Miers) into `2026-07-02-authenticated-data-structures/eprint/`
-(gitignored), after which it can be read whole and a verified note
-written. Optionally also Halo (eprint 2019/1021) for the Ragu
-proving-system background, though that is well-known and non-central.
+eprint 2025/2031 has been supplied manually and read whole; see the
+dedicated verified note `notes/bowe-miers-2025-a-note-on-notes.md`.
+The only optional remaining background is Halo (eprint 2019/1021) for
+the Ragu proving system, which is well-known and non-central; fetch
+only if the paper's proof-system section is written in detail.
 
 ## Use in the paper
 

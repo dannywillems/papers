@@ -194,10 +194,15 @@ Phase 0, context (this file):
 - [x] Research Tachyon and its relation to the property set (done
       2026-07-19; note verified against primary sources; see the
       Tachyon source entry and the log).
-- [ ] Manually download eprint 2025/2031 (Bowe & Miers, "A Note on
+- [x] Manually download eprint 2025/2031 (Bowe & Miers, "A Note on
       Notes") into `eprint/`, read it whole, and upgrade the Tachyon
-      note's accumulator/nullifier construction from "sketched" to
-      verified. This is the one remaining Tachyon gap.
+      note (done 2026-07-19). Dedicated verified note
+      `notes/bowe-miers-2025-a-note-on-notes.md`. Resolved the
+      accumulator/nullifier construction and corrected two
+      blog-based points: the note-commitment accumulator is unchanged
+      (abstract, Merkle); the nullifier mechanism is evolving
+      nullifiers + oblivious-syncing incremental unspent proofs, not
+      a new accumulator.
 
 Phase 1, structure:
 
@@ -338,12 +343,21 @@ to read and WHY; the notes hold the extracted content.
   (github.com/tachyon-zcash/ragu). FORMAL WRITE-UP:
   eprint 2025/2031, Bowe & Miers, "A Note on Notes: Towards Scalable
   Anonymous Payments via Evolving Nullifiers and Oblivious
-  Synchronization" (Nov 2025); central for the concrete accumulator/
-  nullifier construction; MUST be downloaded manually into `eprint/`
-  per the eprint rule, still unread first-hand. Proving-system
+  Synchronization" (Nov 2025). READ WHOLE and VERIFIED 2026-07-19;
+  dedicated note `notes/bowe-miers-2025-a-note-on-notes.md`. This is
+  the formal source for Section 8's Tachyon subsection and for the
+  paper's membership-vs-non-membership framing: the note-commitment
+  MEMBERSHIP accumulator is unchanged (abstract, Merkle; the omega(n)
+  problem of 2025/234, addressed by shardtree), while the NULLIFIER
+  NON-membership set (bounded by Christ-Bonneau 2022/1478) is where
+  evolving nullifiers + oblivious synchronization + incremental
+  unspent proofs (recursive, re-randomized) live. Proving-system
   background: Halo (Bowe, Grigg, Hopwood, eprint 2019/1021). TODO add
-  2025/2031 (and Halo 2019/1021 if the proving system is discussed)
-  to references.bib once the eprint is read. Keep NU7 targeting OUT
+  to references.bib: 2025/2031, and the refs it leans on that our
+  paper may share (Christ-Bonneau 2022/1478, Bunz et al PCD-from-
+  accumulation 2020/499, Boneh-Bunz-Fisch batching CRYPTO 2019,
+  Ozdemir et al set accumulators USENIX Sec 2020, Zerocash S&P 2014,
+  Zexe S&P 2020, Al-Bassam Lazyledger DA). Keep NU7 targeting OUT
   (unconfirmed by primary sources).
 - Shangguan, Yaish, Malkhi, "Authenticated Data Structures for
   Dynamic Workloads" (the Huffman-Merkle Tree, HMT), eprint 2026/1235.
@@ -464,3 +478,18 @@ Secondary sources surfaced by the digests (metadata from eprint
   community project, NOT ECC (Bowe left ECC in 2024). Note fully
   updated; the only remaining gap is the concrete accumulator
   construction, expected in eprint 2025/2031.
+- 2026-07-19 (Tachyon eprint read): eprint 2025/2031 (Bowe & Miers,
+  "A Note on Notes") supplied manually and read whole first-hand;
+  verified note `notes/bowe-miers-2025-a-note-on-notes.md`. It
+  resolved the last Tachyon gap and corrected the blog-based reading:
+  (a) the note-commitment accumulator is UNCHANGED (abstract, Merkle,
+  anchor as public input), NOT replaced; (b) the nullifier mechanism
+  is EVOLVING NULLIFIERS (epoch-keyed PRF) + an oblivious-syncing
+  INCREMENTAL UNSPENT PROOF (recursive proof composition,
+  re-randomized via accumulation-scheme PCD), not a new accumulator.
+  Key framing win for the paper: a clean MEMBERSHIP (note commitments,
+  append-only, 2025/234 bound, shardtree) vs NON-MEMBERSHIP
+  (nullifiers, revocation, 2022/1478 bound, evolving nullifiers +
+  oblivious sync) split; same witness-update tyranny, dual
+  structures, different escapes. All four eprint PDFs in eprint/ are
+  now read; only Halo 2019/1021 remains optional background.
