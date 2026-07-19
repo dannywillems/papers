@@ -54,6 +54,15 @@ they concern.
   files under `notes/` covering the issue's sources; the note on
   eprint 2025/234 is verified against a first-hand read of the full
   paper.
+- Paper `2026-07-02-authenticated-data-structures`: the two remaining
+  Phase 0 reads done whole and first-hand from the local PDFs. The
+  Dahlberg-Pulls-Peeters sparse-Merkle-tree note (eprint 2016/683) is
+  upgraded to verified with the precise definitions, caches, and
+  worst-case analysis; the Huffman-Merkle Tree placeholder is replaced
+  by a full verified note on eprint 2026/1235, which enters the plan
+  as a Section 9 related-work paragraph on workload-adaptive layouts.
+  The published venue of eprint 2025/234 (CRYPTO 2025) is recorded in
+  the plan's sources.
 
 ### Fixed
 
