@@ -75,6 +75,14 @@ reading it partially or from a summary. Compaction while a source is
 in flight is how hallucinated citations happen. More generally, ask
 the human before compacting the context at all.
 
+## Per-paper AGENTS.md and human-only sections
+
+A paper directory may contain its own `AGENTS.md` with
+paper-specific guidance. Any section marked as human-only (e.g.
+"Human section") must NEVER be modified by an agent; it is the
+authoritative statement of the paper's motivation and scope. Read it
+before working on that paper and keep `PLAN.md` consistent with it.
+
 ## Repository layout
 
 - One directory per paper, named `YYYY-MM-DD-<slug>`, containing

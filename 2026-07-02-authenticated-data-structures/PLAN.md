@@ -22,6 +22,15 @@ cryptography researchers. Explicit complexity bounds and optimality
 results throughout; every non-trivial claim proved, cited, or
 implemented.
 
+The authoritative motivation is the human-only section of this
+directory's `AGENTS.md`: provide FORMAL DEFINITIONS of ADS, their
+properties, and multiple instances satisfying them, with Python
+implementations and Lean code; structure the definitions and the Lean
+development as LIBRARIES reusable by other authors and agents. The
+paper grew out of asking, while reading zcash/incrementalmerkletree,
+which structures in the literature solve exactly the problems that
+repository addresses.
+
 ## Current state (2026-07-19)
 
 The paper is a compact note covering the base construction only:
@@ -86,16 +95,23 @@ Mapped from the issue outline, adapted to the paper format:
 The repository convention pairs each paper with runnable code and
 machine-checked proofs. Planned extensions:
 
-- Python (`code/`): an MMR implementation next to `ads.merkle` (append,
-  peaks, bagging, membership proofs, consistency between digests), a
+Both artifacts are LIBRARIES, per the human-only motivation: reusable
+definitions and properties first, instances second.
+
+- Python (`code/`): structure `ads` as a library of interfaces
+  (digest/prove/verify, append, witness maintenance) with the Merkle
+  log as one instance; add an MMR instance (append, peaks, bagging,
+  membership proofs, consistency between digests) and a
   witness-maintenance simulator counting witness updates per append
   (to illustrate the eprint 2025/234 bound empirically), tests for
-  both.
-- Lean (`lean/`): formalise the MMR key property (append never mutates
-  an existing node position) and the proof-size bound; keep the
-  existing Merkle-log proofs as the base layer. The optimality lower
-  bound itself is likely out of reach for a first pass; state as
-  future work.
+  everything.
+- Lean (`lean/`): a reusable library layer of ADS definitions and
+  properties (completeness, soundness, proof-size, witness-update
+  counting), with the existing Merkle-log proofs refactored as the
+  first instance and MMR as the second (key property: append never
+  mutates an existing node position; proof-size bound). The
+  optimality lower bound itself is likely out of reach for a first
+  pass; state as future work.
 
 ## TODOs
 
