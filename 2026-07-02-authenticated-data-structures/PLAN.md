@@ -132,7 +132,13 @@ Mapped from the issue outline, adapted to the paper format:
    fast-forwardable witnesses; the real-world combination (append +
    sparse witnesses + pruning + out-of-order insertion + bounded
    checkpoints + DB-backed sharding); the clean core vs the
-   bookkeeping; incrementalmerkletree / shardtree design.
+   bookkeeping; incrementalmerkletree / shardtree design. Then
+   Tachyon (Sean Bowe, 2025) as the forward-looking counterpart:
+   shardtree engineers WITHIN the witness-update lower bound;
+   Tachyon moves the cost off the wallet entirely via wallet-state
+   proof-carrying data plus an oblivious syncing service, and prunes
+   all old chain state. Neither beats eprint 2025/234; both relocate
+   its cost. See `notes/tachyon-zcash-shielded-protocol.md`.
 9. Comparison and trade-offs: MMR vs sparse Merkle tree vs RSA
    accumulator on append cost, proof size, witness update frequency,
    non-membership support, trusted setup. When each is right.
@@ -403,3 +409,15 @@ Secondary sources surfaced by the digests (metadata from eprint
   added to the canonical property set at the author's request: state
   bounded by marked witnesses + checkpoints + depth, never by the
   total number of appended elements; companions renumbered 8-10.
+- 2026-07-19 (Tachyon): deep-research pass on Tachyon (Sean Bowe's
+  next-gen Zcash shielded protocol). 10 claims verified against his
+  two primary blog posts (0 refuted); pass stopped before full
+  synthesis, note written from the verified core
+  (notes/tachyon-zcash-shielded-protocol.md) with a per-property
+  mapping. Key finding: Tachyon's stated bottleneck IS the
+  witness-update problem; it does not beat the omega(n) lower bound
+  but moves the cost off the wallet (PCD wallet state + oblivious
+  syncing service) and prunes all old chain state. Open items: exact
+  accumulator structure, nullifier handling, ZIP/NU7/curve details
+  (secondary), whether any eprint write-up exists (would need manual
+  download per the eprint rule).
