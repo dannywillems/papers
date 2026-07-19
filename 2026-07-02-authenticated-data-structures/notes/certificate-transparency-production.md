@@ -3,7 +3,11 @@
 - Sources: RFC 6962 (Laurie, Langley, Kasper, IETF, June 2013,
   DOI 10.17487/RFC6962, <https://www.rfc-editor.org/rfc/rfc6962>);
   Certificate Transparency project, "How CT Works",
-  <https://certificate.transparency.dev/howctworks/>. Successor spec:
+  <https://certificate.transparency.dev/howctworks/>; Chrome CT
+  policy (<https://googlechrome.github.io/CertificateTransparency/ct_policy.html>);
+  Mozilla CT docs
+  (<https://developer.mozilla.org/en-US/docs/Web/Security/Certificate_Transparency>,
+  and the Firefox 135 enforcement announcement). Successor spec:
   RFC 9162 (CT v2) restates the structures; cite 6962 as the
   original.
 - Accessed: 2026-07-19.
@@ -170,6 +174,122 @@ UNSUSTAINABLE-once-observed rather than impossible; the residual
 assumption is one honest communication path. (Same observation as
 Crosby-Wallach's commitment gossip; in ADS terms the digest is only
 as authoritative as its distribution channel.)
+
+## How web browsers use CT (with code)
+
+The browser is the enforcement point: it is the O(1)-state verifier
+that refuses a certificate unless it comes with enough evidence that
+it was logged. What a browser does NOT do is fetch inclusion proofs
+inline (that would leak the user's browsing to the logs and add
+handshake latency); instead it trusts the logs' SIGNED PROMISES
+(SCTs) at connection time and leaves proof-checking to the
+asynchronous audit/gossip layer. So the browser's live job reduces to
+two cryptographic checks plus a policy count.
+
+- Status: browser-policy facts below verified against Chrome's CT
+  policy page and Mozilla's CT documentation (2026-07-19); source
+  file paths verified to resolve (HTTP 200) but the line-level
+  contents were not read end-to-end, so treat file references as
+  "the relevant module", not verified line numbers.
+
+### What the browser checks per connection
+
+1. SCT signature verification. Each SCT is a log's signature over
+   (timestamp, log id, certificate/precertificate). The browser
+   holds the logs' public keys (compiled in, see the log list below)
+   and verifies the ECDSA/Ed25519 signature. An SCT with a bad
+   signature, or from an unknown log, does not count. This is the
+   same digest-signing trust as the STH, at the granularity of a
+   single entry's inclusion PROMISE.
+2. Delivery. SCTs reach the browser three ways, all covered by RFC
+   6962 Section 3.3: EMBEDDED in the certificate as an X.509
+   extension (the common case; the CA obtains them from a
+   precertificate and staples them in), in the TLS handshake via a
+   ServerHello extension, or via an OCSP stapled response. The
+   browser gathers SCTs from all three.
+3. Policy count. The browser applies an operator-diversity policy
+   (below). If satisfied, the connection proceeds; otherwise it FAILS
+   CLOSED with a CT-specific error.
+
+### Chrome's policy (verified against the Chrome CT policy page)
+
+- Embedded SCTs: at least one SCT from a Qualified/Usable/ReadOnly
+  log, and a minimum count by certificate lifetime (2 SCTs for
+  lifetimes <= 180 days, 3 for longer), with "at least two SCTs ...
+  issued from distinct CT log operators".
+- TLS- or OCSP-delivered SCTs: at least two SCTs from
+  Qualified/Usable/ReadOnly logs, again from at least two distinct
+  operators.
+- Operator diversity is the point: requiring SCTs from independently
+  operated logs means a single dishonest log cannot get a
+  certificate accepted; an attacker needs two colluding logs.
+- Failure: non-compliant certificates "simply fail to validate in
+  CT-enforcing versions of Chrome." As a liveness safety valve,
+  Chrome DISABLES CT enforcement if it has not received an updated
+  log list within 70 days (a stale client must not hard-fail the
+  whole web).
+- Chrome code (paths resolve on chromium/chromium@main):
+  - policy count and operator diversity:
+    `net/cert/ct_policy_enforcer.cc`
+    (<https://github.com/chromium/chromium/blob/main/net/cert/ct_policy_enforcer.cc>);
+  - per-SCT signature verification and the Merkle machinery:
+    `net/cert/ct_log_verifier.cc`
+    (<https://github.com/chromium/chromium/blob/main/net/cert/ct_log_verifier.cc>),
+    with the RFC 6962 leaf hashing in
+    `net/cert/merkle_tree_leaf.cc`
+    (<https://github.com/chromium/chromium/blob/main/net/cert/merkle_tree_leaf.cc>);
+  - the compiled-in log list and update logic:
+    `components/certificate_transparency/`
+    (<https://github.com/chromium/chromium/tree/main/components/certificate_transparency>).
+
+### Firefox (verified against Mozilla CT docs / release notes)
+
+- CT is enforced on desktop since Firefox 135 (Jan 2025): a TLS
+  server certificate from a root in Mozilla's program needs
+  sufficient CT information (essentially 2 SCTs) or the connection
+  fails with `MOZILLA_PKIX_ERROR_INSUFFICIENT_CERTIFICATE_TRANSPARENCY`.
+- Controlled by the pref `security.pki.certificate_transparency.mode`
+  (0 disables); an SPKI-hash allowlist pref exempts enterprise
+  chains.
+- The trusted-log list is DERIVED FROM CHROME'S list and compiled in,
+  auto-updated weekly in prerelease channels, so log operators submit
+  to Chrome, not separately to Mozilla.
+- Firefox code: `security/ct/` in mozilla-central
+  (<https://searchfox.org/mozilla-central/source/security/ct>), the
+  C++ implementation of SCT decoding, signature verification, and the
+  policy enforcer (`CTPolicyEnforcer`, `CTVerifier`,
+  `CTLogVerifier`).
+
+### Safari / Apple
+
+Apple enforces its own CT policy across TLS on its platforms, with a
+similarly count-and-diversity-based rule and its own trusted-log
+program (documented at
+<https://support.apple.com/en-us/103214>). No open source; behaviour
+is only observable, not code-linkable.
+
+### The log list is the trust root
+
+All three browsers reduce CT trust to a curated LIST OF LOGS (public
+key, operator, state Qualified/Usable/ReadOnly/Retired). Chrome
+publishes the canonical machine-readable list at
+<https://www.gstatic.com/ct/log_list/v3/log_list.json>; Firefox and
+others track it. Being on the list with matching public key is what
+makes an SCT count; disqualifying a misbehaving log is the ecosystem
+response to a caught equivocation, which retroactively invalidates
+its SCTs at the next client update.
+
+### The other side: log and monitor implementations
+
+For completeness (server-side, not the browser): Google's
+`certificate-transparency-go`
+(<https://github.com/google/certificate-transparency-go>) implements
+RFC 6962 logs, monitors, and auditors, and Trillian
+(<https://github.com/google/trillian>) is the append-only Merkle
+transparency backend under many production logs. These are where the
+MTH / audit-path / consistency-proof algorithms above are actually
+served, so they double as reference implementations of the RFC 6962
+structures.
 
 ## Production shape (CT project page)
 
