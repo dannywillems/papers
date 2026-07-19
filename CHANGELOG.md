@@ -41,6 +41,19 @@ they concern.
 - `AGENTS.md`: guidelines for AI coding agents, including the
   mandatory "With the assistance of <model>" attribution in
   agent-generated commits and texts.
+- `AGENTS.md`: three further conventions: per-source reading notes
+  under each paper's `notes/` directory, no context compaction while
+  reading a paper (warn instead), and eprint papers supplied manually
+  by the human into a gitignored `eprint/` directory.
+- Paper `2026-07-02-authenticated-data-structures`: `PLAN.md`, the
+  living plan tracking the extension of the paper to the scope of
+  issue dannywillems.github.io#535 (ADS models, sparse Merkle trees,
+  accumulators, history trees, Merkle Mountain Ranges, the witness-
+  update optimality result of eprint 2025/234, witness maintenance,
+  the Zcash shardtree case study, comparison), plus 17 reading-note
+  files under `notes/` covering the issue's sources; the note on
+  eprint 2025/234 is verified against a first-hand read of the full
+  paper.
 
 ### Fixed
 
