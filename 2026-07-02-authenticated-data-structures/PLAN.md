@@ -36,10 +36,10 @@ repository addresses.
 The properties the formal ADS definitions, the Python library, and
 the Lean library are built against. Source: issue comment
 <https://github.com/dannywillems/dannywillems.github.io/issues/535#issuecomment-5016934670>
-(core properties 1-6), plus bounded memory footprint (added by the
-author in session) and three explicit companions agreed in session.
-This is the interface the incremental-Merkle-tree problem class
-requires:
+(core properties 1-6), plus bounded memory footprint (7) and
+efficient private detection (8) added by the author in session, and
+three explicit companions agreed in session (9-11). This is the
+interface the incremental-Merkle-tree problem class requires:
 
 1. append (append-only insertion of new elements);
 2. sparse witnesses (maintain witnesses only for a marked subset of
@@ -62,15 +62,32 @@ requires:
    state can be bounded separately (cf. the Count-Min Sketch in the
    HMT paper: fixed-size frequency state independent of the number of
    elements).
+8. efficient private detection: a party holding a color key (a
+   detection key for its own elements) can find WHICH elements of the
+   set are its own WITHOUT scanning the whole set (ideally at cost
+   proportional to the number of its own elements, not to the set
+   size n), and no party without that key can learn any element's
+   color (detection stays private). In the color model: a wallet can
+   enumerate its own-color elements cheaply, while "for any other
+   party they're all the same". The plain append-only tree does NOT
+   provide this, a wallet must trial-test every element (the scanning
+   problem), so this is a genuine discriminator, not automatic.
+   Nuance: unlike properties 1-7, detection is a property of the
+   structure PLUS its access protocol (out-of-band delivery of the
+   owner's elements, or a private/oblivious retrieval service over
+   the set), not of the authenticated data structure in isolation;
+   the paper treats it as a system-level desideratum and a column in
+   the comparison. See `notes/color-model-reformulation.md` (the
+   detection problem P1).
 
 Explicit companions:
 
-8. rewind (restore the structure to any retained checkpoint; the
+9. rewind (restore the structure to any retained checkpoint; the
    operation over property 5);
-9. verification against recent anchors (proofs verify against any
-   checkpointed root in a bounded history, not only the latest
-   digest);
-10. metrics attached to property 6, so optimality can be stated:
+10. verification against recent anchors (proofs verify against any
+    checkpointed root in a bounded history, not only the latest
+    digest);
+11. metrics attached to property 6, so optimality can be stated:
     total witness-update count (eprint 2025/234, Definition 8) and
     the cost of a single witness fast-forward.
 
@@ -88,16 +105,15 @@ L_k = { e in S : color(e) = k AND marker(e) not in U }. Color-hiding
 means "only the user can see its own color; for any other party
 they're all the same." This unifies the paper's two structures, S is
 the append-only MEMBERSHIP accumulator (2025/234 bound), U is the
-NON-membership revocation set (2022/1478 bound), and surfaces a
-concern the ten properties do not name: DETECTION / scanning (a new
-wallet must scan all of S to find its own color, and no third party
-can do it without learning the color). Decide whether detection is an
-11th property, an out-of-scope assumption, or a separately treated
-problem. Full development in `notes/color-model-reformulation.md`;
-recommended for the Introduction / Section 2 opening, then
-instantiated (S = note-commitment tree / MMR / sparse Merkle tree;
-U = nullifier set; detection = trial decryption; anchors =
-checkpointed roots).
+NON-membership revocation set (2022/1478 bound), and surfaces the
+DETECTION / scanning problem (a new wallet must scan all of S to find
+its own color, and no third party can do it without learning the
+color). ADOPTED as canonical property 8 (efficient private
+detection). Full development in
+`notes/color-model-reformulation.md`; recommended for the
+Introduction / Section 2 opening, then instantiated (S =
+note-commitment tree / MMR / sparse Merkle tree; U = nullifier set;
+detection = trial decryption; anchors = checkpointed roots).
 
 ## Current state (2026-07-19)
 
@@ -526,3 +542,13 @@ Secondary sources surfaced by the digests (metadata from eprint
   framing for the Introduction / Section 2. Open decision for the
   author: whether detection becomes an 11th property, an out-of-scope
   assumption, or a separate problem.
+- 2026-07-19 (detection + double-spend): adopted efficient private
+  detection as canonical property 8 (companions renumbered 9-11) per
+  the author; the plain append-only tree fails it, so it is a
+  discriminator, and it is a property of the structure PLUS its
+  access protocol. Also documented how Zcash actually prevents
+  double-spends (deterministic per-note nullifier revealed on spend,
+  checked against the maintained nullifier set, rejected if seen
+  before) in both `notes/color-model-reformulation.md` and
+  `notes/zcash-protocol-spec-note-commitment-trees.md`, grounding the
+  used-set / non-membership side of the model.

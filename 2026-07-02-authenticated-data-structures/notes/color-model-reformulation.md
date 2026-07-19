@@ -56,6 +56,56 @@ Three cryptographic properties tie the model to reality:
    are mutually unlinkable, so old markers leak nothing about the
    current one.
 
+### How Zcash actually detects a used marker (double-spend prevention)
+
+The model's "marker in U" is the Zcash NULLIFIER, and the mechanism is
+worth stating concretely because it is exactly what the paper's
+non-membership (used-set) side abstracts.
+
+- The marker is DETERMINISTIC per element. Each note has a single
+  nullifier, computed as a pseudo-random function of the note, keyed
+  on a secret only the owner knows (verified from Bowe-Miers eprint
+  2025/2031, "Nullifier Correctness": the nullifier "must be computed
+  correctly (and deterministically) based on the notes being spent.
+  Ideally, a nullifier is an output of a pseudo-random function
+  applied to the note and keyed on a secret known to the spender").
+  Determinism is the whole trick: spending the SAME note twice yields
+  the SAME nullifier, so the second attempt is catchable, while the
+  keyed-PRF hides which note the nullifier came from (unlinkability,
+  property 3).
+- The used-set U is EXPLICIT consensus state, the NULLIFIER SET. Each
+  shielded spend REVEALS its note's nullifier in the transaction, and
+  validators MAINTAIN the set of all nullifiers ever revealed as part
+  of the chain/treestate. Verified quote (Bowe-Miers): "the nullifier
+  ... serves as an indelible mark on the chain state that prohibits
+  double-spends. Validators currently remember all of the nullifiers
+  seen before and reject payments as invalid if they reveal a
+  previously-seen nullifier."
+- The CHECK is plain set membership on the revealed value. For a new
+  transaction a validator: (i) verifies the zero-knowledge proof
+  (which enforces the nullifier was derived correctly for a note that
+  exists in the commitment set S, without revealing the note); (ii)
+  checks the revealed nullifier is NOT already in the nullifier set U;
+  (iii) checks it is not duplicated by another spend in the same
+  block/transaction (concurrent double-spend). If the nullifier is
+  fresh on all counts, the spend is accepted and the nullifier is
+  ADDED to U. So double-spend detection is: reveal the deterministic
+  mark, reject if the mark was seen before.
+- Note the ASYMMETRY with the commitment set S. Both S and U are
+  authenticated append-only sets, but the queries differ: for S the
+  spender proves MEMBERSHIP (my note is in the tree, via an inclusion
+  witness against an anchor); for U the validator checks
+  NON-membership BY BRUTE RETENTION (the nullifier is absent from the
+  stored set). Zcash keeps the entire nullifier set online precisely
+  because a succinct non-membership proof over U is the hard case
+  (P3 below). This retain-everything check is what evolving nullifiers
+  + oblivious synchronization replace, so validators can keep only a
+  recent window of U and prune the rest.
+- Privacy is preserved throughout: the nullifier is revealed, but it
+  is unlinkable to its note commitment and to the spender, so U is a
+  set of opaque marks. An observer sees that SOME note was spent, not
+  which one, matching color-hiding (property 1) on the used side.
+
 ## 2. The wallet's task
 
 A wallet for color k must track its LIVE set: the elements of its own
@@ -156,26 +206,34 @@ membership witnesses in S.
    own-color UNUSED elements, the number of retained anchors, and the
    set depth, NOT by |S| or |U|. The wallet's memory scales with how
    much of ITS OWN color is live, not with the whole colored world.
-8. rewind: restore to a past anchor (chain reorg) and recolor-forward
+8. efficient private detection: a wallet can find its own-color
+   elements in S WITHOUT scanning all of S (ideally at cost
+   proportional to how many elements are its own), and no party
+   without the color key can learn any element's color. This is P1
+   below made a first-class requirement: "find my coins" cheaply and
+   privately. The plain append-only tree FAILS it (detection = a full
+   trial-test scan), so it is a discriminator, not automatic; and it
+   is a property of the structure PLUS its access protocol (out-of-
+   band delivery or a private/oblivious retrieval service), not of
+   the bare data structure.
+9. rewind: restore to a past anchor (chain reorg) and recolor-forward
    correctly.
-9. verification against recent anchors: prove own-color membership in
-   S and marker-non-membership in U against a RECENT anchor, not only
-   the latest snapshot.
-10. metrics: the total membership-witness-update count over the life
+10. verification against recent anchors: prove own-color membership in
+    S and marker-non-membership in U against a RECENT anchor, not only
+    the latest snapshot.
+11. metrics: the total membership-witness-update count over the life
     of S (the 2025/234 quantity), AND its non-membership dual over U
     (the 2022/1478 quantity), plus the per-use cost of a single
     fast-forward on each side.
 
-The color model also surfaces an ELEVENTH concern the current set does
-not name: DETECTABILITY / scanning cost (P1). The ten properties are
-about maintaining witnesses for elements a wallet ALREADY KNOWS are
-its own; detection is the prior step of learning which elements are
-its own at all. Worth deciding explicitly whether the paper takes
-detection as (a) an additional property, (b) an out-of-scope
-assumption ("the wallet is given its own-color set"), or (c) a
-separately treated problem. Recommendation: name it, then scope it,
-so the paper does not silently conflate "maintain my witnesses" with
-"find my coins".
+Property 8 was adopted from the P1 discussion below: detection is a
+property of the structure the paper wants, not merely an out-of-scope
+assumption. It is distinct in kind from properties 1-7/9-11 (which
+maintain witnesses for elements a wallet ALREADY KNOWS are its own);
+detection is the PRIOR step of learning which elements are its own at
+all. The paper names it and scopes it (structure + access protocol),
+so it does not silently conflate "maintain my witnesses" with "find
+my coins".
 
 ## 5. Tachyon in color terms
 
