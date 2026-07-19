@@ -36,9 +36,10 @@ repository addresses.
 The properties the formal ADS definitions, the Python library, and
 the Lean library are built against. Source: issue comment
 <https://github.com/dannywillems/dannywillems.github.io/issues/535#issuecomment-5016934670>
-(the six core properties), plus three explicit companions agreed in
-session. This is the interface the incremental-Merkle-tree problem
-class requires:
+(core properties 1-6), plus bounded memory footprint (added by the
+author in session) and three explicit companions agreed in session.
+This is the interface the incremental-Merkle-tree problem class
+requires:
 
 1. append (append-only insertion of new elements);
 2. sparse witnesses (maintain witnesses only for a marked subset of
@@ -49,18 +50,29 @@ class requires:
    arbitrary order around a tracked frontier);
 5. bounded checkpoints (at most a fixed number of retained states);
 6. proof update when new elements are added (incremental /
-   fast-forwardable witnesses).
+   fast-forwardable witnesses);
+7. bounded memory footprint: the persistent state is bounded by a
+   function of the number of marked witnesses, the number of retained
+   checkpoints, and the tree depth (so O((m + c) log n) hashes for m
+   marked leaves and c checkpoints in a depth-log n tree), NOT by the
+   total number n of appended elements. This is the guarantee that
+   pruning (property 3) must deliver, stated as a bound so instances
+   can be proved to meet or fail it; the frontier alone is the
+   O(log n) floor (appending needs nothing else), and policy-side
+   state can be bounded separately (cf. the Count-Min Sketch in the
+   HMT paper: fixed-size frequency state independent of the number of
+   elements).
 
 Explicit companions:
 
-7. rewind (restore the structure to any retained checkpoint; the
+8. rewind (restore the structure to any retained checkpoint; the
    operation over property 5);
-8. verification against recent anchors (proofs verify against any
+9. verification against recent anchors (proofs verify against any
    checkpointed root in a bounded history, not only the latest
    digest);
-9. metrics attached to property 6, so optimality can be stated:
-   total witness-update count (eprint 2025/234, Definition 8) and the
-   cost of a single witness fast-forward.
+10. metrics attached to property 6, so optimality can be stated:
+    total witness-update count (eprint 2025/234, Definition 8) and
+    the cost of a single witness fast-forward.
 
 Deliberately out of this set: consistency proofs between digests
 (RFC 6962); the Zcash workload gets digest consistency from
@@ -387,3 +399,7 @@ Secondary sources surfaced by the digests (metadata from eprint
   placeholder; placement decided (related-work paragraph in
   Section 9). Side-find: the published venue of 2025/234 is CRYPTO
   2025 (DOI 10.1007/978-3-032-01878-6_6). Phase 0 is complete.
+- 2026-07-19 (later still): Property 7, bounded memory footprint,
+  added to the canonical property set at the author's request: state
+  bounded by marked witnesses + checkpoints + depth, never by the
+  total number of appended elements; companions renumbered 8-10.
