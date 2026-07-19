@@ -1,0 +1,16 @@
+{
+  "name": "papers-site-assets",
+  "private": true,
+  "description": "TypeScript sources for the site's in-browser code runners",
+  "license": "MIT",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "build": "tsc -p .",
+    "typecheck": "tsc -p . --noEmit"
+  },
+  "devDependencies": {
+    "typescript": "^5.5.4"
+  }
+}

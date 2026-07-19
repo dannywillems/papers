@@ -1,0 +1,52 @@
+/* Styling for the in-browser code runners (Run buttons, output panes,
+ * playground links). Consumes the theme variables defined by the site's
+ * inline theme CSS, so it follows the light/dark toggle. */
+
+.run-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin: 0.5rem 0;
+  flex-wrap: wrap;
+}
+
+.run-btn {
+  font: inherit;
+  font-size: 0.9rem;
+  padding: 0.3rem 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--card);
+  color: var(--fg);
+  cursor: pointer;
+  display: inline-block;
+}
+
+a.run-btn {
+  color: var(--fg);
+  text-decoration: none;
+}
+
+.run-btn:hover {
+  border-color: var(--link);
+  color: var(--link);
+}
+
+.run-btn[disabled] {
+  opacity: 0.6;
+  cursor: wait;
+}
+
+.run-status {
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.run-output {
+  background: var(--pre);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 0.75rem;
+  overflow-x: auto;
+  white-space: pre-wrap;
+}

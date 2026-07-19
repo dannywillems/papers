@@ -361,3 +361,6 @@ htmlcov/
 /*/main.html
 /*/main.css
 /*/main.tmp
+
+## Node (site assets TypeScript project)
+node_modules/

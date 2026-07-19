@@ -23,9 +23,16 @@ html: ## Build every paper as HTML, one after another
 		$(MAKE) -C "$$p" html || exit 1; \
 	done
 
-.PHONY: site
-site: html ## Build the GitHub Pages site (HTML + embedded code)
+.PHONY: site-assets
+site-assets: ## Compile the site's TypeScript assets (requires Node)
+	cd tools/site_assets && npm ci && npx tsc -p .
+
+.PHONY: assemble-site
+assemble-site: ## Assemble site/ from built HTML and compiled assets
 	python3 tools/build_site.py $(PAPERS)
+
+.PHONY: site
+site: site-assets html assemble-site ## Build the GitHub Pages site
 
 .PHONY: clean
 clean: ## Clean auxiliary files in every paper

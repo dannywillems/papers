@@ -25,16 +25,29 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # The site's runner scripts are TypeScript, compiled on the runner
+      # (where Node.js is available) before the LaTeX container step.
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: tools/site_assets/package-lock.json
+
+      - name: Compile site assets (TypeScript)
+        run: make site-assets
+
       # LaTeX -> HTML (make4ht) and site assembly run inside the TeX Live
-      # container via docker run, so the JavaScript actions below still run
-      # on the runner (where Node.js is available).
+      # container via docker run, so the JavaScript actions still run on
+      # the runner (where Node.js is available). The container assembles
+      # the site from the HTML and the assets compiled above; it must not
+      # run 'make site', which would need Node inside the container.
       - name: Build site
         run: |
           docker run --rm -v "$PWD":/work -w /work "$TEXLIVE" sh -c '
             { command -v make && command -v python3; } >/dev/null 2>&1 || \
               (apt-get update && \
                apt-get install -y --no-install-recommends make python3)
-            make site'
+            make html assemble-site'
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3

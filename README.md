@@ -23,12 +23,30 @@ Current papers:
 Every paper is published as HTML at
 <https://dannywillems.github.io/papers>. The LaTeX is converted with
 `make4ht`, mathematics is rendered with MathJax, and each paper's source
-code (Python and Lean) is embedded on its page in collapsible blocks.
-Build the site locally with:
+code (Python and Lean) is embedded on its page in collapsible blocks
+with syntax highlighting.
+
+The embedded code is runnable directly in the browser:
+
+- Python files have a Run button. The code executes in-page on
+  [Pyodide](https://pyodide.org) (CPython compiled to WebAssembly,
+  loaded from a pinned CDN version on first use); test files run under
+  pytest, other files run as `__main__`.
+- Lean files have a "Run in Lean 4 playground" button that opens the
+  file in the official [Lean 4 web playground](https://live.lean-lang.org),
+  with project-local imports inlined at build time so each file is
+  self-contained.
+
+The runner scripts are written in TypeScript (`tools/site_assets/src/`,
+strict mode) and compiled with `tsc` during the site build. Build the
+site locally with:
 
 ```bash
-make site      # LaTeX -> HTML for every paper, then assemble site/
+make site      # TS assets + LaTeX -> HTML per paper, then assemble site/
 ```
+
+`make site-assets` compiles only the TypeScript (requires Node 24);
+`make assemble-site` only reassembles `site/` from already-built HTML.
 
 Open `site/index.html` in a browser. The site is deployed to GitHub
 Pages by `.github/workflows/pages.yaml` on every push to `main`.

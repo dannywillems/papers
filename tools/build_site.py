@@ -3,12 +3,23 @@
 
 Given a list of paper directories on the command line, this script:
 
-1. recreates the ``site/`` output directory (plus a ``.nojekyll`` marker);
+1. recreates the ``site/`` output directory (plus a ``.nojekyll`` marker)
+   and copies the shared static assets from ``tools/site_assets/`` to
+   ``site/assets/``;
 2. for each paper, copies the make4ht HTML/CSS into ``site/<slug>/`` as
    ``index.html``, teaches MathJax the paper's custom ``\\newcommand``
    macros, adds a light/dark theme toggle, and injects a collapsible
    "Source code" section embedding the paper's Python and Lean sources;
-3. writes a landing page ``site/index.html`` listing every paper.
+3. makes the embedded code runnable in the browser: Python files run
+   in-page on Pyodide (see ``site_assets/python-runner.js``), and each
+   Lean file gets a link opening it in the official Lean 4 web
+   playground, with project-local imports inlined at build time so the
+   file is self-contained;
+4. writes a landing page ``site/index.html`` listing every paper.
+
+Everything is driven by conventions (the ``code/`` and ``lean/``
+directories, file extensions), never by per-paper logic, so a new paper
+directory gets all of it for free.
 
 It uses only the Python standard library. Each paper is expected to have
 been converted with ``make -C <paper> html`` first, producing
@@ -26,10 +37,15 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 SITE = ROOT / "site"
+ASSETS = ROOT / "tools" / "site_assets"
 
-# Highlight.js language class per source extension. Lean is not a
-# highlight.js language, so it is shown as plain (readable) text.
-_LANG = {".py": "language-python", ".lean": "language-plaintext"}
+# Highlight.js language class per source extension. Lean is covered by
+# the custom grammar in site_assets/hljs-lean.js.
+_LANG = {".py": "language-python", ".lean": "language-lean"}
+
+# data-lang attribute per source extension, used by the runner scripts
+# to find the blocks they own.
+_LANG_NAME = {".py": "python", ".lean": "lean"}
 
 # Directories inside a paper whose source files are embedded on its page,
 # in display order.
@@ -120,12 +136,22 @@ _TOGGLE_BUTTON = (
 _HLJS_SCRIPT = """\
 <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/\
 highlight.min.js"></script>
+<script src="../assets/hljs-lean.js"></script>
 <script>document.addEventListener('DOMContentLoaded', function () {
-  document.querySelectorAll('pre code.language-python').forEach(function (el) {
-    if (window.hljs) window.hljs.highlightElement(el);
-  });
+  document.querySelectorAll('pre code[class*="language-"]')
+    .forEach(function (el) {
+      if (window.hljs) window.hljs.highlightElement(el);
+    });
 });</script>
 """
+
+# Stylesheet and scripts making the embedded code runnable. Relative to
+# a paper page, the shared assets live at ../assets/.
+_RUNNER_CSS = '<link rel="stylesheet" href="../assets/code-run.css">'
+_RUNNER_SCRIPTS = (
+    '<script src="../assets/python-runner.js"></script>'
+    '<script src="../assets/lean-playground.js"></script>'
+)
 
 # Parses \newcommand{\name}[nargs]{body} from a paper's LaTeX source.
 _NEWCOMMAND = re.compile(r"\\newcommand\{\\([A-Za-z]+)\}(?:\[(\d+)\])?\{")
@@ -209,8 +235,73 @@ def _iter_source_files(base: Path, exts: list[str]) -> list[Path]:
     return found
 
 
+_LEAN_IMPORT = re.compile(r"^import\s+([\w.]+)\s*$")
+
+
+def _lean_bundle(
+    root: Path, path: Path, seen: set[Path]
+) -> tuple[list[str], list[tuple[Path, str]]]:
+    """Inline the project-local imports of ``path``, depth first.
+
+    ``root`` is the Lean source root against which module names resolve
+    (``Ads.Merkle`` -> ``Ads/Merkle.lean``). Returns the external
+    ``import`` lines and the ``(file, body)`` pairs in dependency order,
+    each body stripped of its import lines. ``seen`` guards against
+    duplicated and cyclic imports.
+    """
+    if path in seen:
+        return [], []
+    seen.add(path)
+    externals: list[str] = []
+    bodies: list[tuple[Path, str]] = []
+    kept: list[str] = []
+    for line in path.read_text(encoding="utf-8").splitlines():
+        match = _LEAN_IMPORT.match(line)
+        if not match:
+            kept.append(line)
+            continue
+        local = root / (match.group(1).replace(".", "/") + ".lean")
+        if local.is_file():
+            ext, deps = _lean_bundle(root, local, seen)
+            externals.extend(ext)
+            bodies.extend(deps)
+        else:
+            externals.append(line)
+    bodies.append((path, "\n".join(kept).strip("\n")))
+    return externals, bodies
+
+
+def _lean_playground_source(root: Path, path: Path, paper: Path) -> str:
+    """Self-contained source for the Lean 4 web playground.
+
+    The playground compiles a single buffer, so project-local imports
+    are replaced by the imported files' contents (in dependency order);
+    external imports (e.g. Mathlib) are kept, deduplicated, at the top.
+    If the file defines ``main`` an ``#eval main`` is appended so the
+    demonstration actually runs in the playground.
+    """
+    externals, bodies = _lean_bundle(root, path, set())
+    parts: list[str] = list(dict.fromkeys(externals))
+    if parts:
+        parts.append("")
+    for src, body in bodies:
+        if not body:
+            continue
+        if src != path:
+            rel = src.relative_to(paper).as_posix()
+            parts.append(f"-- Inlined from {rel} (project-local import).")
+        parts.append(body)
+        parts.append("")
+    text = "\n".join(parts).strip("\n") + "\n"
+    if re.search(r"^def main\b", text, re.MULTILINE) \
+            and "#eval main" not in text:
+        text += "\n#eval main\n"
+    return text
+
+
 def _code_section(paper: Path) -> str:
     blocks: list[str] = []
+    lean_sources: dict[str, str] = {}
     for heading, subdir, exts in _CODE_GROUPS:
         files = _iter_source_files(paper / subdir, exts)
         if not files:
@@ -219,16 +310,32 @@ def _code_section(paper: Path) -> str:
         for path in files:
             rel = path.relative_to(paper).as_posix()
             lang = _LANG.get(path.suffix, "language-plaintext")
+            lang_name = _LANG_NAME.get(path.suffix, "")
             body = html.escape(path.read_text(encoding="utf-8"))
             blocks.append(
-                f"<details open><summary>{html.escape(rel)}</summary>"
+                f'<details open data-path="{html.escape(rel)}"'
+                f' data-lang="{lang_name}">'
+                f"<summary>{html.escape(rel)}</summary>"
                 f'<pre><code class="{lang}">{body}</code></pre></details>'
             )
+            if path.suffix == ".lean":
+                lean_sources[rel] = _lean_playground_source(
+                    paper / subdir, path, paper
+                )
     if not blocks:
         return ""
+    if lean_sources:
+        # </ must not appear verbatim inside a script element.
+        payload = json.dumps(lean_sources).replace("</", "<\\/")
+        blocks.append(
+            '<script type="application/json" id="lean-playground-src">'
+            f"{payload}</script>"
+        )
     intro = (
         "The implementation and the machine-checked proofs accompanying "
-        "this paper. Click a file heading to collapse or expand it."
+        "this paper. Click a file heading to collapse or expand it. "
+        "Python files run directly in the browser (Pyodide); Lean files "
+        "open in the Lean 4 web playground."
     )
     return (
         '<section class="paper-code"><h2>Source code</h2>'
@@ -258,8 +365,9 @@ def _build_paper(paper: Path) -> tuple[str, str, str]:
     # not touch main.css.
     text = text.replace("main.html", "index.html")
 
-    # Head: theme CSS, highlight.js styles, early no-flash theme script.
-    head = _THEME_CSS + _HLJS_LINKS + _EARLY_THEME_SCRIPT
+    # Head: theme CSS, highlight.js styles, runner stylesheet, early
+    # no-flash theme script.
+    head = _THEME_CSS + _HLJS_LINKS + _RUNNER_CSS + _EARLY_THEME_SCRIPT
     text = text.replace("</head>", head + "</head>", 1)
 
     # Teach MathJax the paper's macros, before the MathJax loader runs.
@@ -280,8 +388,12 @@ def _build_paper(paper: Path) -> tuple[str, str, str]:
         text, count=1,
     )
 
-    # Body end: embedded source code, highlighting, theme wiring.
-    tail = _code_section(paper) + _HLJS_SCRIPT + _THEME_SCRIPT + "</body>"
+    # Body end: embedded source code, highlighting, code runners, theme
+    # wiring.
+    tail = (
+        _code_section(paper) + _HLJS_SCRIPT + _RUNNER_SCRIPTS
+        + _THEME_SCRIPT + "</body>"
+    )
     text = text.replace("</body>", tail, 1)
 
     dest = SITE / slug
@@ -329,7 +441,8 @@ def _build_index(papers: list[tuple[str, str, str]]) -> None:
 <p>Research papers in mathematics and computer science, with accompanying
 code and, where relevant, machine-checked proofs. Each paper is readable
 as HTML (mathematics rendered with MathJax) with its source code embedded
-on the page.</p>
+on the page: Python runs directly in the browser, and Lean files open in
+the Lean 4 web playground.</p>
 {''.join(cards)}
 <footer>Built from the LaTeX sources with make4ht. Source repository:
 <a href="https://github.com/dannywillems/papers">dannywillems/papers</a>.
@@ -338,6 +451,25 @@ on the page.</p>
 </html>
 """
     (SITE / "index.html").write_text(page, encoding="utf-8")
+
+
+def _copy_site_assets() -> None:
+    """Copy the shared static assets into ``site/assets/``.
+
+    The JavaScript is compiled from the TypeScript sources in
+    ``tools/site_assets/src/`` into ``tools/site_assets/dist/`` by
+    ``make site-assets`` (tsc); this script only copies the results.
+    """
+    dist = ASSETS / "dist"
+    if not dist.is_dir() or not any(dist.glob("*.js")):
+        raise SystemExit(
+            "missing compiled site assets in tools/site_assets/dist; "
+            "run 'make site-assets' first (requires Node)"
+        )
+    dest = SITE / "assets"
+    dest.mkdir(parents=True)
+    for asset in list(ASSETS.glob("*.css")) + list(dist.glob("*.js")):
+        shutil.copy2(asset, dest / asset.name)
 
 
 def main(argv: list[str]) -> int:
@@ -349,6 +481,7 @@ def main(argv: list[str]) -> int:
         shutil.rmtree(SITE)
     SITE.mkdir(parents=True)
     (SITE / ".nojekyll").write_text("", encoding="utf-8")
+    _copy_site_assets()
 
     built: list[tuple[str, str, str]] = []
     for name in paper_dirs:

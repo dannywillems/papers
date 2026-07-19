@@ -16,3 +16,11 @@ updates:
       interval: "weekly"
     commit-message:
       prefix: "deps"
+
+  # TypeScript toolchain of the site's runner scripts.
+  - package-ecosystem: "npm"
+    directory: "/tools/site_assets"
+    schedule:
+      interval: "weekly"
+    commit-message:
+      prefix: "deps"

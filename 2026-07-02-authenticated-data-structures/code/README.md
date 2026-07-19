@@ -25,6 +25,12 @@ proof = log.prove(i)
 assert verify_membership(digest, i, b"second", proof)
 ```
 
+A runnable demonstration is included:
+
+```bash
+uv run python -m ads
+```
+
 ## Development
 
 This project uses [uv](https://docs.astral.sh/uv/).
