@@ -79,6 +79,26 @@ Deliberately out of this set: consistency proofs between digests
 consensus. The paper covers them in the append-only-logs section as
 an extension, not as a required property.
 
+Candidate UNIFYING FRAMING (the color model). The whole wallet
+problem can be restated over a colored set: one global append-only
+set S of elements, each with a hidden COLOR (one color = one user),
+plus a USED set U of markers (nullifiers). A live coin is a
+same-color, not-yet-used element:
+L_k = { e in S : color(e) = k AND marker(e) not in U }. Color-hiding
+means "only the user can see its own color; for any other party
+they're all the same." This unifies the paper's two structures, S is
+the append-only MEMBERSHIP accumulator (2025/234 bound), U is the
+NON-membership revocation set (2022/1478 bound), and surfaces a
+concern the ten properties do not name: DETECTION / scanning (a new
+wallet must scan all of S to find its own color, and no third party
+can do it without learning the color). Decide whether detection is an
+11th property, an out-of-scope assumption, or a separately treated
+problem. Full development in `notes/color-model-reformulation.md`;
+recommended for the Introduction / Section 2 opening, then
+instantiated (S = note-commitment tree / MMR / sparse Merkle tree;
+U = nullifier set; detection = trial decryption; anchors =
+checkpointed roots).
+
 ## Current state (2026-07-19)
 
 The paper is a compact note covering the base construction only:
@@ -493,3 +513,16 @@ Secondary sources surfaced by the digests (metadata from eprint
   oblivious sync) split; same witness-update tyranny, dual
   structures, different escapes. All four eprint PDFs in eprint/ are
   now read; only Halo 2019/1021 remains optional background.
+- 2026-07-19 (color model): added `notes/color-model-reformulation.md`,
+  reformulating the Zcash wallet problem as a colored append-only set
+  S (one hidden color per user) plus a used-marker set U, with a live
+  coin = same-color, not-yet-used element. It restates all ten
+  canonical properties in color terms, maps Tachyon's three moves
+  (out-of-band color transmission, oblivious synchronization,
+  evolving markers) onto it, and surfaces the DETECTION / scanning
+  problem (a new wallet must scan all of S to find its own color;
+  color-hiding means no third party can) as a concern the property
+  set does not currently name. Proposed as the paper's unifying
+  framing for the Introduction / Section 2. Open decision for the
+  author: whether detection becomes an 11th property, an out-of-scope
+  assumption, or a separate problem.
