@@ -23,6 +23,24 @@ they concern.
   papers. Deployed to GitHub Pages at
   <https://dannywillems.github.io/papers>.
 
+- Runnable code on the site, generic for every paper: embedded Python
+  files get a Run button and execute in the browser on Pyodide (pinned
+  CDN version; test files run under pytest, other files as
+  `__main__`); embedded Lean files get a "Run in Lean 4 playground"
+  button opening live.lean-lang.org with project-local imports inlined
+  at build time. The runner scripts are strict TypeScript
+  (`tools/site_assets/src/`), compiled with `tsc` by `make site-assets`.
+- Lean syntax highlighting on the site via a custom highlight.js
+  grammar (declarations, tactics, nested block and doc comments,
+  attributes, `#`-commands).
+- Paper `2026-07-02-authenticated-data-structures`: runnable
+  demonstration module (`python -m ads`) printing digest, proof, and
+  verification results; also the entry point for the in-browser Run
+  button.
+- `AGENTS.md`: guidelines for AI coding agents, including the
+  mandatory "With the assistance of <model>" attribution in
+  agent-generated commits and texts.
+
 ### Fixed
 
 - Site rendering: teach MathJax the papers' custom `\newcommand` macros
@@ -41,3 +59,7 @@ they concern.
   mypy, pytest), Lean build and demo run, changelog hygiene, PR hygiene,
   and shellcheck. LaTeX runs in a TeX Live container via `docker run`.
 - Dependabot for GitHub Actions and the Python code.
+- CI: site-assets workflow compiling the TypeScript runner scripts with
+  strict `tsc` on every PR; the Pages deploy compiles them on the
+  runner (Node 24) before the TeX Live container assembles the site
+  (`make site-assets` / `make assemble-site` split).
