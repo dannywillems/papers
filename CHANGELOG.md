@@ -26,13 +26,14 @@ they concern.
 - Runnable code on the site, generic for every paper: embedded Python
   files get a Run button and execute in the browser on Pyodide (pinned
   CDN version; test files run under pytest, other files as
-  `__main__`); embedded Lean files get a "Run in Lean 4 playground"
-  button opening live.lean-lang.org with project-local imports inlined
-  at build time. The runner scripts are strict TypeScript
-  (`tools/site_assets/src/`), compiled with `tsc` by `make site-assets`.
-- Lean syntax highlighting on the site via a custom highlight.js
-  grammar (declarations, tactics, nested block and doc comments,
-  attributes, `#`-commands).
+  `__main__`); embedded Lean files can be swapped in place for an
+  embedded Lean4Web editor (the official Lean 4 web editor, which also
+  provides the syntax highlighting) or opened in a new tab, with
+  project-local imports inlined at build time. The runner scripts are
+  strict TypeScript (`tools/site_assets/src/`), compiled with `tsc` by
+  `make site-assets`.
+- `AGENTS.md` principle: always use existing and standard tools
+  (Lean4Web instead of a hand-written Lean highlight.js grammar).
 - Paper `2026-07-02-authenticated-data-structures`: runnable
   demonstration module (`python -m ads`) printing digest, proof, and
   verification results; also the entry point for the in-browser Run
@@ -63,3 +64,9 @@ they concern.
   strict `tsc` on every PR; the Pages deploy compiles them on the
   runner (Node 24) before the TeX Live container assembles the site
   (`make site-assets` / `make assemble-site` split).
+- Dependency updates (Dependabot round of 2026-07-19): GitHub Actions
+  `actions/checkout` v4 to v7, `actions/upload-pages-artifact` v3 to
+  v5, `actions/deploy-pages` v4 to v5, `astral-sh/setup-uv` v6 to v7,
+  `tarides/changelog-check-action` v3 to v4; Python dev tools `ruff`
+  to >=0.15.22, `mypy` to >=2.3.0, `pytest` to >=9.1.1; `typescript`
+  5.9.3 to 7.0.2 (with the `rootDir` setting TS 7 requires).
