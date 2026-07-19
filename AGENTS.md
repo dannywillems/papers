@@ -23,6 +23,20 @@ prose, say so with the same phrasing (for papers, an acknowledgement
 note "Written with the assistance of <model>"; for documentation, the
 commit attribution line is enough).
 
+## Always use existing and standard tools
+
+Prefer an existing, standard, well-maintained tool over anything
+hand-rolled, at every layer: build steps, site features, editor
+integrations, linters. If a capability exists in a standard tool,
+integrate that tool; do not re-implement a subset of it.
+
+Example: Lean sources on the site are displayed and run through
+Lean4Web (the official Lean 4 web editor), which brings its own syntax
+highlighting; a hand-written highlight.js grammar for Lean was removed
+in favour of it. The same reasoning applies to future needs: search
+for the standard tool first, and only write custom code when no
+suitable tool exists (say so in the commit message).
+
 ## Repository layout
 
 - One directory per paper, named `YYYY-MM-DD-<slug>`, containing

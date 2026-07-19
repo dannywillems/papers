@@ -11,10 +11,11 @@ Given a list of paper directories on the command line, this script:
    macros, adds a light/dark theme toggle, and injects a collapsible
    "Source code" section embedding the paper's Python and Lean sources;
 3. makes the embedded code runnable in the browser: Python files run
-   in-page on Pyodide (see ``site_assets/python-runner.js``), and each
-   Lean file gets a link opening it in the official Lean 4 web
-   playground, with project-local imports inlined at build time so the
-   file is self-contained;
+   in-page on Pyodide (see ``site_assets/src/python-runner.ts``), and
+   each Lean file can be swapped for an embedded Lean4Web editor (the
+   official Lean 4 web editor, which also provides the syntax
+   highlighting), with project-local imports inlined at build time so
+   the file is self-contained;
 4. writes a landing page ``site/index.html`` listing every paper.
 
 Everything is driven by conventions (the ``code/`` and ``lean/``
@@ -39,9 +40,11 @@ ROOT = Path(__file__).resolve().parent.parent
 SITE = ROOT / "site"
 ASSETS = ROOT / "tools" / "site_assets"
 
-# Highlight.js language class per source extension. Lean is covered by
-# the custom grammar in site_assets/hljs-lean.js.
-_LANG = {".py": "language-python", ".lean": "language-lean"}
+# Highlight.js language class per source extension. highlight.js ships
+# no Lean grammar and we do not hand-roll one: the Lean listing is
+# plain text, and highlighting comes from the embedded Lean4Web editor
+# (see site_assets/src/lean-playground.ts).
+_LANG = {".py": "language-python", ".lean": "language-plaintext"}
 
 # data-lang attribute per source extension, used by the runner scripts
 # to find the blocks they own.
@@ -136,12 +139,10 @@ _TOGGLE_BUTTON = (
 _HLJS_SCRIPT = """\
 <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/\
 highlight.min.js"></script>
-<script src="../assets/hljs-lean.js"></script>
 <script>document.addEventListener('DOMContentLoaded', function () {
-  document.querySelectorAll('pre code[class*="language-"]')
-    .forEach(function (el) {
-      if (window.hljs) window.hljs.highlightElement(el);
-    });
+  document.querySelectorAll('pre code.language-python').forEach(function (el) {
+    if (window.hljs) window.hljs.highlightElement(el);
+  });
 });</script>
 """
 
@@ -335,7 +336,8 @@ def _code_section(paper: Path) -> str:
         "The implementation and the machine-checked proofs accompanying "
         "this paper. Click a file heading to collapse or expand it. "
         "Python files run directly in the browser (Pyodide); Lean files "
-        "open in the Lean 4 web playground."
+        "can be edited and run in place with Lean4Web, the official "
+        "Lean 4 web editor."
     )
     return (
         '<section class="paper-code"><h2>Source code</h2>'
@@ -442,7 +444,7 @@ def _build_index(papers: list[tuple[str, str, str]]) -> None:
 code and, where relevant, machine-checked proofs. Each paper is readable
 as HTML (mathematics rendered with MathJax) with its source code embedded
 on the page: Python runs directly in the browser, and Lean files open in
-the Lean 4 web playground.</p>
+Lean4Web, the official Lean 4 web editor.</p>
 {''.join(cards)}
 <footer>Built from the LaTeX sources with make4ht. Source repository:
 <a href="https://github.com/dannywillems/papers">dannywillems/papers</a>.

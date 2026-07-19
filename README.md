@@ -32,9 +32,11 @@ The embedded code is runnable directly in the browser:
   [Pyodide](https://pyodide.org) (CPython compiled to WebAssembly,
   loaded from a pinned CDN version on first use); test files run under
   pytest, other files run as `__main__`.
-- Lean files have a "Run in Lean 4 playground" button that opens the
-  file in the official [Lean 4 web playground](https://live.lean-lang.org),
-  with project-local imports inlined at build time so each file is
+- Lean files can be swapped in place for an embedded
+  [Lean4Web](https://live.lean-lang.org) editor (the official Lean 4
+  web editor), which provides syntax highlighting, editing, and
+  server-side checking; a second button opens the same editor in a new
+  tab. Project-local imports are inlined at build time so each file is
   self-contained.
 
 The runner scripts are written in TypeScript (`tools/site_assets/src/`,
