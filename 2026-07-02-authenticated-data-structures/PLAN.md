@@ -191,6 +191,13 @@ Phase 0, context (this file):
       decision: one related-work paragraph in Section 9 presenting
       workload-adaptive layouts as an orthogonal optimality axis, see
       the source entry below).
+- [x] Research Tachyon and its relation to the property set (done
+      2026-07-19; note verified against primary sources; see the
+      Tachyon source entry and the log).
+- [ ] Manually download eprint 2025/2031 (Bowe & Miers, "A Note on
+      Notes") into `eprint/`, read it whole, and upgrade the Tachyon
+      note's accumulator/nullifier construction from "sketched" to
+      verified. This is the one remaining Tachyon gap.
 
 Phase 1, structure:
 
@@ -320,6 +327,24 @@ to read and WHY; the notes hold the extracted content.
   `notes/certificate-transparency-production.md`. TODO add.
 - Working synthesis (not citable):
   `notes/synthesis-witness-maintenance.md`.
+- Tachyon (Sean Bowe + the tachyon-zcash community project; NOT ECC).
+  For: Section 8, the forward-looking counterpart to shardtree, and
+  the conclusion's "the lower bound is unbeatable, so the engineering
+  relocates the work" framing. Full note (verified against primary
+  sources) at `notes/tachyon-zcash-shielded-protocol.md`. Primary:
+  Bowe's blog posts (tachyon oblivious-sync 2025-04-02, tachyaction
+  2025-05-15, ragu-for-orchard 2025-04-17), tachyon.z.cash
+  overview/roadmap and the Ragu post, and the Ragu repo
+  (github.com/tachyon-zcash/ragu). FORMAL WRITE-UP:
+  eprint 2025/2031, Bowe & Miers, "A Note on Notes: Towards Scalable
+  Anonymous Payments via Evolving Nullifiers and Oblivious
+  Synchronization" (Nov 2025); central for the concrete accumulator/
+  nullifier construction; MUST be downloaded manually into `eprint/`
+  per the eprint rule, still unread first-hand. Proving-system
+  background: Halo (Bowe, Grigg, Hopwood, eprint 2019/1021). TODO add
+  2025/2031 (and Halo 2019/1021 if the proving system is discussed)
+  to references.bib once the eprint is read. Keep NU7 targeting OUT
+  (unconfirmed by primary sources).
 - Shangguan, Yaish, Malkhi, "Authenticated Data Structures for
   Dynamic Workloads" (the Huffman-Merkle Tree, HMT), eprint 2026/1235.
   Resolves the "Huffman-Merkle Tree (HMT)" issue comment. Status:
@@ -417,7 +442,25 @@ Secondary sources surfaced by the digests (metadata from eprint
   mapping. Key finding: Tachyon's stated bottleneck IS the
   witness-update problem; it does not beat the omega(n) lower bound
   but moves the cost off the wallet (PCD wallet state + oblivious
-  syncing service) and prunes all old chain state. Open items: exact
-  accumulator structure, nullifier handling, ZIP/NU7/curve details
-  (secondary), whether any eprint write-up exists (would need manual
-  download per the eprint rule).
+  syncing service) and prunes all old chain state.
+- 2026-07-19 (Tachyon follow-up): three targeted agents closed the
+  open items. (a) Accumulator: role unchanged (append + anchor +
+  set-inclusion) but the CONCRETE structure is deliberately unnamed
+  in the blogs; Tachyon introduces a new PCD-friendly
+  (non-)membership accumulator into which nullifiers "and potentially
+  also note commitments" are batch-inserted, scheme only "sketched".
+  (b) Nullifiers: reversed derivation; the historical freshness check
+  moves into PCD so validators check only "the most recent
+  block(s)", which is what makes global pruning of the nullifier set
+  sound. (c) FORMAL WRITE-UP FOUND: eprint 2025/2031, Bowe & Miers,
+  "A Note on Notes: Towards Scalable Anonymous Payments via Evolving
+  Nullifiers and Oblivious Synchronization" (Nov 2025); central,
+  needs manual download per the eprint rule. (d) Proving system Ragu
+  confirmed: github.com/tachyon-zcash/ragu, Rust PCD, modified Halo
+  (eprint 2019/1021) over Pasta + Poseidon, trusted-setup-free,
+  un-audited. (e) Status: no Tachyon ZIP; NU7 inclusion UNCONFIRMED
+  (primary sources do not pin it to NU7; likely post-NU7);
+  attribution corrected to Sean Bowe + the independent tachyon-zcash
+  community project, NOT ECC (Bowe left ECC in 2024). Note fully
+  updated; the only remaining gap is the concrete accumulator
+  construction, expected in eprint 2025/2031.
