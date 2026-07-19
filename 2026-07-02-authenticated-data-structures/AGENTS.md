@@ -9,6 +9,8 @@ solve.
 The motivation of this paper is to provide formal definitions of ADS, their
 properties and multiple instances of structures with these properties. Python
 implementations will be given, in addition to code in Lean.
+The set of definitions and Lean code will be structured as libraries, so it can
+be reused later by other authors or agents.
 
 AI tools will be used to scrap the bibliography, and to automate the paper
 redaction.
